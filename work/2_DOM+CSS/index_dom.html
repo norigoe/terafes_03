@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ゆめかわ★ウイルス・ぽっぷ（DOM版）</title>
+<style>
+:root{--pk:#ff8fc7;--bl:#4fd8ff;--ink:#5a3a7a;--hy:500px}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#2b1f4a;font-family:"Hiragino Maru Gothic ProN","Yu Gothic UI",Meiryo,sans-serif;color:var(--ink)}
+body{display:grid;place-items:center}
+#app{position:relative;overflow:hidden;border-radius:14px}
+#stage{position:absolute;left:0;top:0;width:800px;height:600px;transform-origin:0 0;font-size:18px;overflow:hidden;background:linear-gradient(180deg,#ffd1ec,#d9c8ff 55%,#a9ecff)}
+/* --- ゲーム画面 --- */
+.spk{position:absolute;width:6px;height:6px;border-radius:50%;background:#fff;opacity:.7;animation:fall linear infinite}
+@keyframes fall{from{transform:translateY(-10px)}to{transform:translateY(610px)}}
+.lane{position:absolute;top:0;bottom:0;width:110px;background:rgba(255,255,255,.45);border:2px solid rgba(255,255,255,.9)}
+.rc{position:absolute;top:calc(var(--hy) - 40px);left:15px;width:80px;height:80px;border-radius:50%;border:5px solid #fff;background:var(--c);opacity:.5;font:bold 28px/70px sans-serif;text-align:center;color:var(--ink)}
+.rc.f{opacity:1;transform:scale(1.15)}
+#hud{position:absolute;inset:0;pointer-events:none;font-weight:800;-webkit-text-stroke:0}
+#sc{position:absolute;left:16px;top:8px;font-size:26px;text-shadow:0 0 4px #fff,0 0 4px #fff,0 0 4px #fff}
+#hp{position:absolute;right:16px;top:24px;font-size:20px;color:#ff4fa3;letter-spacing:2px}
+#hp .off{color:rgba(255,255,255,.7)}
+#hpl{position:absolute;right:16px;top:4px;font-size:14px}
+#bar{position:absolute;left:16px;top:50px;width:220px;height:8px;background:rgba(255,255,255,.7)}
+#bar i{display:block;height:100%;width:0;background:var(--bl)}
+#cb{position:absolute;left:0;right:0;top:170px;text-align:center;font-size:24px;color:#ff4fa3;text-shadow:0 0 4px #fff,0 0 4px #fff}
+#jd{position:absolute;left:0;right:0;top:250px;text-align:center;font-size:44px;opacity:0;text-shadow:0 0 5px #fff,0 0 5px #fff,0 0 5px #fff}
+#jd.pop{animation:pop .6s ease-out}
+@keyframes pop{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-24px)}}
+#rd{position:absolute;left:0;right:0;top:290px;text-align:center;font-size:30px;text-shadow:0 0 4px #fff,0 0 4px #fff}
+.p{position:absolute;width:10px;height:10px;border-radius:50%;background:var(--c);animation:burst .5s ease-out forwards}
+@keyframes burst{to{transform:translate(var(--dx),var(--dy)) scale(.2);opacity:0}}
+/* --- ウイルス（divの組み合わせ） --- */
+.v{position:absolute;left:0;top:0;width:0;height:0;will-change:transform}
+.bd{position:absolute;left:-28px;top:-28px;width:56px;height:56px;border-radius:50%;background:var(--c);border:3px solid #fff;animation:wob .5s ease-in-out infinite alternate}
+@keyframes wob{to{translate:0 -4px}}
+.bd b{position:absolute;top:14px;left:8px;width:14px;height:14px;border-radius:50%;background:radial-gradient(circle at 55% 55%,var(--ink) 38%,#fff 42%)}
+.bd b+b{left:auto;right:8px}
+.bd u{position:absolute;left:50%;bottom:8px;width:10px;height:5px;margin-left:-5px;border-bottom:2px solid var(--ink);border-radius:0 0 10px 10px}
+.t0{--c:#ffa6d3}.t1{--c:#9ff2d0}.t2{--c:#ffe66b}
+.sp{position:absolute;left:-40px;top:-40px;width:80px;height:80px;border-radius:50%;background:repeating-conic-gradient(#ff6fb5 0 18deg,transparent 18deg 36deg);animation:spin 4s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.hat{position:absolute;left:-18px;top:-64px;width:0;height:0;border:18px solid transparent;border-top:0;border-bottom:38px solid #5fd1a8}
+.hat::after{content:"";position:absolute;left:-6px;top:-14px;width:12px;height:12px;border:3px solid var(--ink);border-radius:50%}
+.t2 .bd{scale:.6}
+.t2 .bd:nth-child(1){left:-46px;top:-38px}.t2 .bd:nth-child(2){left:-2px;top:-34px}.t2 .bd:nth-child(3){left:-24px;top:-6px}
+/* --- 画面 --- */
+.scr{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:11px;text-align:center;background:linear-gradient(160deg,#ffe0f3,#e3d6ff 55%,#c9f1ff)}
+.scr.on{display:flex}
+h1{margin:0;font-size:47px;line-height:1.1;color:#fff;-webkit-text-stroke:3px var(--pk);paint-order:stroke fill;text-shadow:4px 4px 0 var(--bl)}
+p{margin:0}.sub{font-weight:700}
+.row{display:flex;gap:18px;align-items:stretch;justify-content:center}
+.btn{font:inherit;font-weight:800;color:#fff;border:3px solid #fff;border-radius:36px;padding:12px 22px;cursor:pointer;background:linear-gradient(135deg,var(--pk),#c7a6ff);box-shadow:0 4px 0 #c46fa3}
+.btn.hot{background:linear-gradient(135deg,#ff7aa8,#ff9d5c);box-shadow:0 4px 0 #c4577e}
+.btn small{display:block;font-weight:500;font-size:12px}
+.btn:hover,.btn:focus-visible{transform:translateY(-2px);outline:3px solid var(--bl)}
+.sm{font:inherit;font-size:11px;background:none;border:0;color:var(--ink);opacity:.6;cursor:pointer;text-decoration:underline}
+kbd{display:inline-block;min-width:28px;padding:1px 7px;border-radius:7px;background:#fff;border:2px solid var(--pk);font:inherit;font-weight:800}
+.cert{width:340px;padding:18px;border:5px double var(--pk);border-radius:18px;background:#fffafd}
+.cert h2{margin:0;font-size:17px}
+.rank{font-size:70px;font-weight:900;line-height:1.1;color:var(--pk);text-shadow:3px 3px 0 var(--bl)}
+.cert p{margin:3px 0}
+#rl{margin:0;padding:12px 16px 12px 42px;width:380px;text-align:left;font-size:12.5px;background:#ffffffaa;border-radius:18px}
+#rl .me{font-weight:900;color:#e2368a}
+</style></head><body>
+<div id="app"><div id="stage">
+
+<div id="play">
+ <div id="lanes"></div>
+ <div id="field"></div>
+ <div id="hud"><div id="sc"></div><div id="hpl">サーバーHP</div><div id="hp"></div><div id="bar"><i id="bi"></i></div><div id="cb"></div><div id="jd"></div><div id="rd"></div></div>
+</div>
+
+<section id="title" class="scr on">
+ <h1>ゆめかわ★<br>ウイルス・ぽっぷ</h1>
+ <p class="sub">〜パステルカラーのサイバー防衛戦！テンキー連打で大優勝★〜</p>
+ <p>えっ、ウイルスなのにかわちい！？<br>テンキー叩いてノックアウト★</p>
+ <div class="row">
+  <button class="btn" data-k="easy">初級：甘口ぽっぷ編<small>ゆったり／2レーン／60秒　[1キー]</small></button>
+  <button class="btn hot" data-k="hard">上級：激辛フィーバー編<small>ハイスピード／4レーン／90秒　[2キー]</small></button>
+ </div>
+ <p style="font-size:14px">あそびかた：ウイルスが下の丸に重なったら <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>4</kbd> を叩く！</p>
+ <button class="sm" id="rst">ランキングをリセット（スタッフ用）</button>
+</section>
+
+<section id="result" class="scr">
+ <div class="row">
+  <div class="cert">
+   <h2>ゆめかわサイバーアナリスト認定証</h2>
+   <div class="rank" id="rk"></div>
+   <p id="rt" style="font-weight:800"></p>
+   <p id="rs"></p>
+   <p style="font-size:12px">📷 スマホで撮影して記念にしてね！</p>
+  </div>
+  <ol id="rl"></ol>
+ </div>
+ <div class="row">
+  <button class="btn hot" id="again">もう一回！ <small>[Enter]</small></button>
+  <button class="btn" id="home">タイトルへ <small>[Esc]</small></button>
+ </div>
+</section>
+</div></div>
+
+<script>
+const $=id=>document.getElementById(id),W=800,HY=500;
+const COURSES={
+ easy:{name:'甘口ぽっぷ編',lanes:2,fall:2.4,dur:60,bpm:100,p:.6},
+ hard:{name:'激辛フィーバー編',lanes:4,fall:1.35,dur:90,bpm:140,p:.55}};
+const COLS=['#ff8fc7','#4fd8ff','#9ff2d0','#ffe66b'];
+const PEN=[523.25,587.33,659.25,783.99,880],BASS=[130.8,110,87.3,98];
+const JUDGE=[{tx:'大優勝！',c:'#ff4fa3',pt:300},{tx:'神！',c:'#3bb8ff',pt:200},{tx:'超かわよ！',c:'#9a6bff',pt:100}];
+let S=null,ctx=null,state='title',last='easy',noise=null;
+
+// ---------- 画面サイズに合わせて拡大縮小 ----------
+function fit(){const s=Math.min(innerWidth/W,innerHeight/600);$('stage').style.transform='scale('+s+')';$('app').style.width=W*s+'px';$('app').style.height=600*s+'px'}
+addEventListener('resize',fit);fit();
+for(let i=0;i<20;i++){const d=document.createElement('div');d.className='spk';d.style.cssText='left:'+(i*41%W)+'px;animation-duration:'+(8+i%5*3)+'s;animation-delay:-'+(i*1.7)+'s';$('stage').prepend(d)}
+
+// ---------- 譜面 ----------
+function rng(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function chart(c){
+ const r=rng(c.lanes*77+5),spb=60/c.bpm,step=c.lanes==2?spb:spb/2,lead=Math.ceil((c.fall+.3)/spb)*spb,out=[];
+ let prev=-1,rep=0;
+ for(let t=lead;t<lead+c.dur-1;t+=step){
+  if(r()>=c.p)continue;
+  let l=Math.floor(r()*c.lanes);if(l==prev&&rep>=2)l=(l+1)%c.lanes;
+  rep=l==prev?rep+1:1;prev=l;
+  out.push({t,l,ty:Math.floor(r()*3),h:0,el:null});
+  if(c.lanes==4&&r()<.12)out.push({t,l:(l+2)%4,ty:Math.floor(r()*3),h:0,el:null});
+ }
+ return{notes:out,lead};
+}
+
+// ---------- 音 ----------
+function tone(f,at,d,type,v){const o=ctx.createOscillator(),g=ctx.createGain();o.type=type;o.frequency.value=f;
+ g.gain.setValueAtTime(v,at);g.gain.exponentialRampToValueAtTime(.001,at+d);o.connect(g).connect(ctx.destination);o.start(at);o.stop(at+d)}
+function kick(at){const o=ctx.createOscillator(),g=ctx.createGain();o.frequency.setValueAtTime(150,at);o.frequency.exponentialRampToValueAtTime(40,at+.15);
+ g.gain.setValueAtTime(.5,at);g.gain.exponentialRampToValueAtTime(.001,at+.2);o.connect(g).connect(ctx.destination);o.start(at);o.stop(at+.2)}
+function hiss(at,d,v,hp){const s=ctx.createBufferSource(),f=ctx.createBiquadFilter(),g=ctx.createGain();s.buffer=noise;f.type='highpass';f.frequency.value=hp;
+ g.gain.setValueAtTime(v,at);g.gain.exponentialRampToValueAtTime(.001,at+d);s.connect(f).connect(g).connect(ctx.destination);s.start(at);s.stop(at+d)}
+function sched(){
+ const sp=60/S.c.bpm/4;
+ while(S.t0+S.step*sp<ctx.currentTime+.3){
+  const i=S.step++,at=S.t0+i*sp,s=i%16,b=(i>>4)%4;
+  if(s%4==0)kick(at);
+  if(s%4==2)hiss(at,.05,.12,7000);
+  if(s==4||s==12)hiss(at,.12,.18,1500);
+  if([0,6,8,14].includes(s))tone(BASS[b],at,.25,'triangle',.22);
+  if(s%2==0)tone(PEN[((s/2)*3+b*2)%5],at,.18,'square',.035);
+ }
+}
+
+// ---------- DOM部品 ----------
+function lx(n,l){return(W-n*110)/2+l*110+55}
+function mkVirus(ty){
+ const v=document.createElement('div'),face='<b></b><b></b><u></u>';
+ v.className='v t'+ty;
+ v.innerHTML=ty==0?'<i class="sp"></i><i class="bd">'+face+'</i>':ty==1?'<i class="hat"></i><i class="bd">'+face+'</i>':('<i class="bd">'+face+'</i>').repeat(3);
+ return v;
+}
+function buildLanes(c){
+ const L=$('lanes');L.innerHTML='';
+ for(let l=0;l<c.lanes;l++){
+  const x=lx(c.lanes,l)-55,a=document.createElement('div');a.className='lane';a.style.left=x+'px';L.appendChild(a);
+  const r=document.createElement('div');r.className='rc';r.style.cssText='left:'+(x+15)+'px;--c:'+COLS[l];r.textContent=l+1;r.id='rc'+l;L.appendChild(r);
+ }
+}
+function setHud(){
+ $('sc').textContent='SCORE '+S.score;
+ $('cb').textContent=S.combo>1?S.combo+' COMBO':'';
+ $('hp').innerHTML='♥'.repeat(Math.max(S.hp,0))+'<span class="off">'+'♥'.repeat(10-Math.max(S.hp,0))+'</span>';
+}
+function say(tx,c){const j=$('jd');j.textContent=tx;j.style.color=c;j.classList.remove('pop');void j.offsetWidth;j.classList.add('pop')}
+function burst(x){
+ for(let i=0;i<12;i++){
+  const p=document.createElement('div'),a=Math.random()*6.28,d=40+Math.random()*50;
+  p.className='p';p.style.cssText='left:'+x+'px;top:'+HY+'px;--c:'+COLS[i%4]+';--dx:'+Math.cos(a)*d+'px;--dy:'+Math.sin(a)*d+'px';
+  p.onanimationend=()=>p.remove();$('field').appendChild(p);
+ }
+}
+
+// ---------- ゲーム進行 ----------
+function show(id){['title','result'].forEach(k=>$(k).classList.toggle('on',k==id));$('play').style.display=id?'none':'block'}
+function start(k){
+ last=k;const c=COURSES[k];
+ if(!ctx){ctx=new(window.AudioContext||window.webkitAudioContext)();
+  noise=ctx.createBuffer(1,ctx.sampleRate*.3,ctx.sampleRate);const d=noise.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1}
+ ctx.resume();
+ const ch=chart(c);
+ S={k,c,notes:ch.notes,lead:ch.lead,t0:ctx.currentTime+.3,step:0,hp:10,score:0,combo:0,max:0,hit:0,nxt:0,live:[],end:ch.lead+c.dur+.5};
+ $('field').innerHTML='';buildLanes(c);setHud();$('rd').textContent='じゅんびしてね…';
+ show(null);state='play';requestAnimationFrame(loop);
+}
+function loop(){
+ if(state!='play')return;
+ const t=ctx.currentTime-S.t0,c=S.c;sched();
+ // 出現
+ while(S.nxt<S.notes.length&&S.notes[S.nxt].t-t<c.fall*1.15){
+  const n=S.notes[S.nxt++];n.el=mkVirus(n.ty);$('field').appendChild(n.el);S.live.push(n);
+ }
+ // 移動・ミス判定
+ S.live=S.live.filter(n=>{
+  if(n.h){n.el.remove();return false}
+  if(t-n.t>.2){n.h=-1;n.el.remove();miss();return false}
+  n.el.style.transform='translate('+lx(c.lanes,n.l)+'px,'+(HY-(n.t-t)/c.fall*(HY+30))+'px)';
+  return true;
+ });
+ $('bi').style.width=Math.min(100,Math.max(0,(t-S.lead)/c.dur*100))+'%';
+ if(t>-.3&&t>S.lead-.5)$('rd').textContent='';
+ if(S.hp<=0||t>S.end){finish();return}
+ requestAnimationFrame(loop);
+}
+function miss(){S.hp--;S.combo=0;setHud();say('ざんねん…','#8a7bb0')}
+function press(l){
+ const t=ctx.currentTime-S.t0,rc=$('rc'+l);
+ rc.classList.add('f');setTimeout(()=>rc.classList.remove('f'),100);
+ let b=null;
+ for(const n of S.live)if(!n.h&&n.l==l){const d=Math.abs(n.t-t);if(d<=.2&&(!b||d<b.d))b={n,d}}
+ if(!b)return;
+ b.n.h=1;S.hit++;S.combo++;S.max=Math.max(S.max,S.combo);
+ const J=JUDGE[b.d<.06?0:b.d<.12?1:2];
+ S.score+=J.pt+Math.min(S.combo,50)*2;setHud();say(J.tx,J.c);
+ tone(PEN[(l*2)%5]*2,ctx.currentTime,.15,'sine',.25);
+ burst(lx(S.c.lanes,l));
+}
+function stop(){state='title';show('title')}
+function finish(){
+ state='result';
+ const total=S.notes.length,rate=total?Math.round(S.hit/total*100):0,dead=S.hp<=0;
+ const rk=rate>=95?['S','超大優勝★']:rate>=85?['A','大優勝！']:rate>=70?['B','神！']:['C','まだまだかわいい'];
+ $('rk').textContent='ランク '+rk[0];
+ $('rt').textContent=(dead?'サーバーダウン… ':'')+'防衛率：'+rate+'%（'+rk[1]+'）';
+ $('rs').textContent='スコア '+S.score+'／最大コンボ '+S.max;
+ const list=load(),me={s:S.score,d:S.c.name,r:rate,t:new Date().toLocaleString('ja-JP',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}),id:Date.now()};
+ list.push(me);list.sort((a,b)=>b.s-a.s);const top=list.slice(0,10);save(top);
+ $('rl').innerHTML='';
+ top.forEach(e=>{const li=document.createElement('li');if(e.id==me.id)li.className='me';li.textContent=e.s+'点 '+e.d+' '+e.r+'% ('+e.t+')';$('rl').appendChild(li)});
+ show('result');
+}
+function load(){try{return JSON.parse(localStorage.getItem('yumekawa_hs')||'[]')}catch(e){return[]}}
+function save(v){try{localStorage.setItem('yumekawa_hs',JSON.stringify(v))}catch(e){}}
+
+// ---------- 入力 ----------
+addEventListener('keydown',e=>{
+ if(e.repeat)return;
+ const m=/^(?:Numpad|Digit)([1-4])$/.exec(e.code),k=m?+m[1]:0;
+ if(state=='title'){if(k==1)start('easy');if(k==2)start('hard')}
+ else if(state=='play'){if(e.code=='Escape')stop();else if(k&&k<=S.c.lanes)press(k-1)}
+ else{if(e.code=='Enter')start(last);if(e.code=='Escape')stop()}
+});
+document.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>start(b.dataset.k));
+$('again').onclick=()=>start(last);$('home').onclick=stop;
+$('rst').onclick=()=>{if(confirm('ハイスコアを全部消します。よろしいですか？'))save([])};
+show('title');
+</script>
+</body></html>
