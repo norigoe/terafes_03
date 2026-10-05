@@ -60,6 +60,47 @@ kbd{display:inline-block;min-width:28px;padding:1px 7px;border-radius:7px;backgr
 .cert p{margin:3px 0}
 #rl{margin:0;padding:12px 16px 12px 42px;width:380px;text-align:left;font-size:12.5px;background:#ffffffaa;border-radius:18px}
 #rl .me{font-weight:900;color:#e2368a}
+
+/* --- タイトル画面（キャラ紹介デザイン） --- */
+#title{justify-content:center;gap:12px;background:linear-gradient(rgba(120,160,255,.22) 1px,transparent 1px) 0 0/40px 40px,linear-gradient(90deg,rgba(120,160,255,.22) 1px,transparent 1px) 0 0/40px 40px,linear-gradient(180deg,#ffd1ec,#dccbff 50%,#bfe6ff)}
+#title>*:not(#fl){position:relative;z-index:1}
+#fl{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:0}
+#fl i{position:absolute;bottom:-30px;font-style:normal;opacity:.55;animation:rise linear infinite}
+@keyframes rise{to{transform:translateY(-660px) rotate(20deg)}}
+.ttl{display:grid;justify-items:center;font-size:68px;font-weight:900;line-height:1.2;white-space:nowrap}
+.ttl span{grid-area:1/1}
+.ttl .bk{color:#fff;-webkit-text-stroke:14px #fff;text-shadow:0 0 16px #ff8fc7,0 0 32px #ff8fc7}
+.ttl .fr{background:linear-gradient(90deg,#ff3fa0,#b84df0 50%,#2aa6f5);-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub2{font-size:21px;font-weight:800;text-shadow:0 0 6px #fff,0 0 6px #fff}
+.chars{display:flex;gap:90px;margin-top:6px}
+.cc{width:260px}
+.ch{position:relative;width:150px;height:150px;margin:0 auto;display:grid;place-items:center;animation:bob 2.4s ease-in-out infinite}
+.cc:nth-child(2) .ch{animation-delay:-.8s}.cc:nth-child(3) .ch{animation-delay:-1.6s}
+@keyframes bob{50%{transform:translateY(-8px)}}
+.nm{margin-top:8px;font-size:24px;font-weight:800;text-shadow:0 0 6px #fff,0 0 6px #fff,0 0 6px #fff}
+.qt{font-size:15px;font-weight:700;color:#7a5aa8}
+.fc{position:relative;width:100px;height:100px;border-radius:50%;border:4px solid #fff;background:radial-gradient(circle at 38% 30%,var(--c1),var(--c2));box-shadow:0 0 18px var(--c2)}
+.fc i{position:absolute;display:block;font-style:normal}
+.fc .e{top:36px;left:20px;width:22px;height:22px;border-radius:50%;border:2px solid #fff;background:radial-gradient(circle at 36% 30%,#fff 0 16%,transparent 18%),#3b2455}
+.fc .e.r{left:auto;right:20px}
+.fc .bl{top:60px;left:7px;width:16px;height:9px;border-radius:50%;background:rgba(255,110,160,.55)}
+.fc .bl.r{left:auto;right:7px}
+.fc .m{left:50%;top:64px;width:12px;height:6px;margin-left:-6px;border-bottom:3px solid #3b2455;border-radius:0 0 12px 12px}
+.stars{position:absolute;left:50%;top:50%;width:150px;height:150px;margin:-75px 0 0 -75px;background:#ff5fb0;animation:spin 14s linear infinite}
+.c0{--c1:#ffa3d3;--c2:#ff6fb5}.c1{--c1:#b6f5dc;--c2:#6fdcb4}.c2{--c1:#fff09a;--c2:#ffd23f}
+.lk{left:50%;top:-4px;width:22px;height:16px;margin-left:-11px;background:#ffd84d;border-radius:4px}
+.lk::before{content:"";position:absolute;left:3px;top:-11px;width:10px;height:11px;border:3px solid #ffd84d;border-bottom:0;border-radius:8px 8px 0 0}
+.cr{left:50%;top:-34px;width:50px;height:30px;margin-left:-25px;background:#2f8b80;border-radius:4px 4px 0 0}
+.cr::after{content:"";position:absolute;left:0;right:0;bottom:5px;height:7px;background:#ff9ccf}
+.br{left:50%;top:-8px;width:84px;height:11px;margin-left:-42px;background:#2f8b80;border-radius:3px}
+.hk{left:50%;top:-30px;margin-left:24px;width:26px;height:48px;border:3px solid #777c8a;border-left:0;border-radius:0 24px 24px 0}
+.c2.fc{width:84px;height:84px}
+.an{top:-22px;left:20px;width:2px;height:24px;background:#ff8fc7;transform-origin:bottom;transform:rotate(-18deg)}
+.an::before{content:"";position:absolute;left:-3px;top:-5px;width:8px;height:8px;border-radius:50%;background:#ff8fc7}
+.an.r{left:auto;right:20px;transform:rotate(18deg)}
+.xx{left:0;right:0;top:22px;text-align:center;font-size:24px;font-weight:900;color:#5a3a22}
+.c2.fc .bl{top:46px}
+.hint{font-size:14px;font-weight:700}
 </style></head><body>
 <div id="app"><div id="stage">
 
@@ -70,14 +111,22 @@ kbd{display:inline-block;min-width:28px;padding:1px 7px;border-radius:7px;backgr
 </div>
 
 <section id="title" class="scr on">
- <h1>ゆめかわ★<br>ウイルス・ぽっぷ</h1>
- <p class="sub">〜パステルカラーのサイバー防衛戦！テンキー連打で大優勝★〜</p>
- <p>えっ、ウイルスなのにかわちい！？<br>テンキー叩いてノックアウト★</p>
- <div class="row">
+ <div id="fl"></div>
+ <div class="ttl"><span class="bk" aria-hidden="true">ゆめかわ★ウイルス・ぽっぷ</span><span class="fr">ゆめかわ★ウイルス・ぽっぷ</span></div>
+ <p class="sub2">〜パステルカラーのサイバー防衛戦！テンキー連打で大優勝★〜</p>
+ <div class="chars">
+  <div class="cc"><div class="ch"><i class="stars"></i><div class="fc c0"><i class="lk"></i><i class="e"></i><i class="e r"></i><i class="bl"></i><i class="bl r"></i><i class="m"></i></div></div>
+   <div class="nm">ぷにぷにランサムちゃん</div><div class="qt">「データを人質にとっちゃうぞ♡」</div></div>
+  <div class="cc"><div class="ch"><div class="fc c1"><i class="hk"></i><i class="cr"></i><i class="br"></i><i class="e"></i><i class="e r"></i><i class="bl"></i><i class="bl r"></i><i class="m"></i></div></div>
+   <div class="nm">てくてくフィッシング</div><div class="qt">「ニセのリンクで釣っちゃうよ〜」</div></div>
+  <div class="cc"><div class="ch"><div class="fc c2"><i class="an"></i><i class="an r"></i><i class="xx">&gt;_&lt;</i><i class="bl"></i><i class="bl r"></i></div></div>
+   <div class="nm">パニックDDoS</div><div class="qt">「みんなで押しかけるよ！」</div></div>
+ </div>
+ <div class="row" style="margin-top:8px">
   <button class="btn" data-k="easy">初級：甘口ぽっぷ編<small>ゆったり／2レーン／60秒　[1キー]</small></button>
   <button class="btn hot" data-k="hard">上級：激辛フィーバー編<small>ハイスピード／4レーン／90秒　[2キー]</small></button>
  </div>
- <p style="font-size:14px">あそびかた：ウイルスが下の丸に重なったら <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>4</kbd> を叩く！</p>
+ <p class="hint">ウイルスが下の丸に重なったら <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>4</kbd> を叩こう！</p>
  <button class="sm" id="rst">ランキングをリセット（スタッフ用）</button>
 </section>
 
@@ -250,5 +299,13 @@ document.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>start(b.dataset.k
 $('again').onclick=()=>start(last);$('home').onclick=stop;
 $('rst').onclick=()=>{if(confirm('ハイスコアを全部消します。よろしいですか？'))save([])};
 show('title');
+(function(){
+ const f=$('fl'),C=['#ff9ccf','#c9a8ff','#9fd8ff','#fff'],G=['♥','♥','★'];
+ for(let i=0;i<16;i++){const e=document.createElement('i');e.textContent=G[i%3];
+  e.style.cssText='left:'+(i*67%1040)+'px;font-size:'+(14+i%4*8)+'px;color:'+C[i%4]+';animation-duration:'+(10+i%5*3)+'s;animation-delay:-'+(i*1.3)+'s';f.appendChild(e)}
+ document.querySelectorAll('.stars').forEach(el=>{const p=[];
+  for(let k=0;k<24;k++){const a=k*Math.PI/12,r=k%2?36:50;p.push((50+Math.cos(a)*r)+'% '+(50+Math.sin(a)*r)+'%')}
+  el.style.clipPath='polygon('+p.join(',')+')'});
+})();
 </script>
 </body></html>
