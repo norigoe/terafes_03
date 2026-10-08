@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<!--
+  ============================================================
+  ゆめかわ★ウイルス・ぽっぷ　見本ソース（仕様書 第2版に合わせた、動く見本）
+  ------------------------------------------------------------
+  ・見た目は画面モックアップ、動きは仕様書のとおり。1ファイルにまとめてある。
+  ・<script> の中は、本番のファイル分け（仕様書 2.2）ごとに「===== ファイル名 =====」で区切ってある。
+    担当のファイルを作るときは、その区切りの部分を見本にする（そのままコピーしてもよい）。
+  ・ファイルをまたぐ呼び出しは、仕様書 10.1 の関数だけを使っている。
+  ・フォントは fonts/ フォルダを使う（index.html と同じ場所に置く）。
+  ・天国と地獄の譜面は【仮】。本物のメロディは、中山さんが耳で確かめて直す。
+  ============================================================
+-->
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ゆめかわ★ウイルス・ぽっぷ（見本）</title>
+<style>
+/* ============================================================
+   chara.css（松井）　キャラ（ウイルス3体）の見た目。全画面で共通
+   ------------------------------------------------------------
+   ・タイトル、セレクト、プレイ、リザルトの4画面で、同じキャラを使う（仕様書 6章）。
+   ・HTMLの形（3種類とも、この形をコピーして使う）：
+       ランサムちゃん：<div class="ch"><i class="stars"></i><div class="fc c0"><i class="lk"></i><i class="e"></i><i class="e r"></i><i class="bl"></i><i class="bl r"></i><i class="m"></i></div></div>
+       フィッシング　：<div class="ch"><div class="fc c1"><i class="hk"></i><i class="cr"></i><i class="br"></i><i class="e"></i><i class="e r"></i><i class="bl"></i><i class="bl r"></i><i class="m"></i></div></div>
+       DDoS　　　　　：<div class="ch"><div class="fc c2"><i class="an"></i><i class="an r"></i><i class="xx">&gt;_&lt;</i><i class="bl"></i><i class="bl r"></i></div></div>
+       ※ フィッシングは class="fc c1 santa" にすると、サンタの帽子になる。
+   ・大きさは --s（倍率）で変える。.ch は 130×130 の箱で、その中心に顔が来る。
+   ・※ キャラの部品のクラス名（.e .bl .m .lk .cr .br .hk .an .xx）は、他の場所では使わない（見た目が混ざる）。
+   ============================================================ */
+
+/* キャラ1体の箱（130×130）。中心に顔を置き、上下にゆらゆら動く（bob）。--s で大きさを変える */
+.ch{--s:1;position:relative;width:130px;height:130px;display:grid;place-items:center;scale:var(--s);animation:bob 2.4s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-8px)}}
+
+/* 小さく並べるとき用の枠（セレクト画面のカード、認定証の飾り）。--w が枠の大きさ。中の .ch を枠の中心に置く */
+.slot{--w:76px;position:relative;flex:none;width:var(--w);height:var(--w)}
+.slot .ch{position:absolute;left:50%;top:50%;margin:-65px 0 0 -65px}
+
+/* 顔の共通部分（丸・白い縁・光）。色は .c0 .c1 .c2 の --c1 --c2 で変える。中の i 要素が目・ほほ・口になる */
+.fc{position:relative;width:100px;height:100px;border-radius:50%;border:4px solid #fff;background:radial-gradient(circle at 38% 30%,var(--c1),var(--c2));box-shadow:0 0 18px var(--c2)}
+.fc i{position:absolute;display:block;font-style:normal}
+.fc .e{top:36px;left:20px;width:22px;height:22px;border-radius:50%;border:2px solid #fff;background:radial-gradient(circle at 36% 30%,#fff 0 16%,transparent 18%),#3b2455}
+.fc .e.r{left:auto;right:20px}
+.fc .bl{top:60px;left:7px;width:16px;height:9px;border-radius:50%;background:rgba(255,110,160,.55)}
+.fc .bl.r{left:auto;right:7px}
+.fc .m{left:50%;top:64px;width:12px;height:6px;margin-left:-6px;border-bottom:3px solid #3b2455;border-radius:0 0 12px 12px}
+.c0{--c1:#ffa3d3;--c2:#ff6fb5}.c1{--c1:#b6f5dc;--c2:#6fdcb4}.c2{--c1:#fff09a;--c2:#ffd23f}
+
+/* ランサムちゃん：後ろのトゲ（星形）と、頭の上の鍵 */
+.stars{position:absolute;left:50%;top:50%;width:130px;height:130px;margin:-65px 0 0 -65px;background:#ff5fb0;animation:spin 14s linear infinite;
+  clip-path:polygon(100.0% 50.0%,84.8% 59.3%,93.3% 75.0%,75.5% 75.5%,75.0% 93.3%,59.3% 84.8%,50.0% 100.0%,40.7% 84.8%,25.0% 93.3%,24.5% 75.5%,6.7% 75.0%,15.2% 59.3%,0.0% 50.0%,15.2% 40.7%,6.7% 25.0%,24.5% 24.5%,25.0% 6.7%,40.7% 15.2%,50.0% 0.0%,59.3% 15.2%,75.0% 6.7%,75.5% 24.5%,93.3% 25.0%,84.8% 40.7%)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.lk{left:50%;top:-4px;width:22px;height:16px;margin-left:-11px;background:#ffd84d;border-radius:4px}
+.lk::before{content:"";position:absolute;left:3px;top:-11px;width:10px;height:11px;border:3px solid #ffd84d;border-bottom:0;border-radius:8px 8px 0 0}
+
+/* フィッシング：帽子（.cr 上の部分、.br つば）と、釣り針（.hk） */
+.cr{left:50%;top:-34px;width:50px;height:30px;margin-left:-25px;background:#2f8b80;border-radius:4px 4px 0 0}
+.cr::after{content:"";position:absolute;left:0;right:0;bottom:5px;height:7px;background:#ff9ccf}
+.br{left:50%;top:-8px;width:84px;height:11px;margin-left:-42px;background:#2f8b80;border-radius:3px}
+.hk{left:50%;top:-30px;margin-left:24px;width:26px;height:48px;border:3px solid #777c8a;border-left:0;border-radius:0 24px 24px 0}
+
+/* フィッシングの季節の帽子：.fc に santa を足すと、帽子がサンタの帽子になる（ジングルベルのカードと、ジングルベルのプレイ中に使う） */
+.santa .br{top:-2px;box-shadow:0 2px 3px rgba(150,40,80,.25);width:88px;height:14px;margin-left:-44px;background:#fff;border-radius:8px}
+.santa .cr{top:-36px;width:56px;height:38px;margin-left:-30px;background:linear-gradient(#ff6f8e,#e8335a);border-radius:0;clip-path:polygon(0 100%,100% 100%,75% 0)}
+.santa .cr::after{display:none}
+.santa .br::after{content:"";position:absolute;left:49px;top:-41px;width:14px;height:14px;border-radius:50%;background:#fff}
+
+/* DDoS：少し小さい顔、触角（.an）、＞_＜の顔（.xx） */
+.c2.fc{width:84px;height:84px}
+.an{top:-22px;left:20px;width:2px;height:24px;background:#ff8fc7;transform-origin:bottom;transform:rotate(-18deg)}
+.an::before{content:"";position:absolute;left:-3px;top:-5px;width:8px;height:8px;border-radius:50%;background:#ff8fc7}
+.an.r{left:auto;right:20px;transform:rotate(18deg)}
+.xx{left:0;right:0;top:22px;text-align:center;font-size:24px;font-weight:900;color:#5a3a22}
+.c2.fc .bl{top:46px}
+
+/* ============================================================
+   style.css（松井）　全体・タイトル・曲選択・プレイ画面の見た目
+   ------------------------------------------------------------
+   ・リザルト画面（認定証）の見た目は result.css（岡野）に書く。
+   ・元になったのは index_3songs.html の <style>。
+   ============================================================ */
+/* フォント：丸ゴシックの「M PLUS Rounded 1c」を fonts/ に同梱（ネットなしでも表示できる。ライセンスは fonts/OFL.txt）。
+   太さは3種類：400（ふつう）、700（太字）、800（極太。900を指定したときもこれを使う） */
+@font-face{font-family:"Yumekawa";src:url(fonts/MPLUSRounded1c-Regular.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"Yumekawa";src:url(fonts/MPLUSRounded1c-Bold.woff2) format("woff2");font-weight:700}
+@font-face{font-family:"Yumekawa";src:url(fonts/MPLUSRounded1c-ExtraBold.woff2) format("woff2");font-weight:800 900}
+/* CSS変数：よく使う色を名前で登録（--pk=ピンク、--bl=水色、--ink=文字色、--hy=判定ラインの高さ） */
+:root{--pk:#ff8fc7;--bl:#4fd8ff;--ink:#5a3a7a;--hy:500px}
+*{box-sizing:border-box}
+/* ページ全体：余白をなくし、画面いっぱいに。body は grid で中身を中央に置く */
+html,body{margin:0;height:100%;background:#2b1f4a;font-family:"Yumekawa","Hiragino Maru Gothic ProN","Yu Gothic UI",Meiryo,sans-serif;color:var(--ink)}
+body{display:grid;place-items:center}
+/* #app：ゲーム全体の外枠。大きさは JavaScript の fit() が、画面に合わせて設定する */
+#app{position:relative;overflow:hidden;border-radius:14px}
+/* #stage：ゲームの「舞台」。内部サイズは 1067×600（16:9）で作り、transform:scale() で画面に合わせて拡大縮小する。font-size は文字サイズの基準 */
+#stage{position:absolute;left:0;top:0;width:1067px;height:600px;transform-origin:0 0;font-size:18px;overflow:hidden;background:linear-gradient(rgba(120,160,255,.22) 1px,transparent 1px) 0 0/40px 40px,linear-gradient(90deg,rgba(120,160,255,.22) 1px,transparent 1px) 0 0/40px 40px,linear-gradient(180deg,#ffd1ec,#dccbff 50%,#bfe6ff)}
+/* --- ゲーム画面 --- */
+/* 背景のキラキラ（小さな白い点）。fall アニメーションで上から下へ流れ続ける */
+.spk{position:absolute;width:6px;height:6px;border-radius:50%;background:#fff;opacity:.7;animation:fall linear infinite}
+@keyframes fall{from{transform:translateY(-10px)}to{transform:translateY(610px)}}
+/* レーン（ウイルスが落ちる縦の帯）。水色の縦線で区切る */
+.lane{position:absolute;top:0;bottom:0;width:110px;background:rgba(255,255,255,.38);border:0 solid #6fd8ff;border-width:0 2px;box-shadow:0 0 10px rgba(111,216,255,.6)}
+/* 判定ライン（ピンクの横線）と、判定リング（レーンごとの色の輪）。押したとき .f が付くと、色で塗りつぶされて大きくなる */
+.jl{position:absolute;left:313px;width:441px;top:calc(var(--hy) - 3px);height:6px;border-radius:3px;background:#ff66b0;box-shadow:0 0 8px #ff66b0}
+.rc{position:absolute;top:calc(var(--hy) - 40px);left:15px;width:80px;height:80px;border-radius:50%;border:6px solid var(--c);background:transparent;box-shadow:0 0 8px var(--c)}
+.rc.f{background:var(--c);transform:scale(1.15)}
+/* 押すキーの名前（判定リングの下の白い札） */
+.kl{position:absolute;top:calc(var(--hy) + 52px);width:56px;height:36px;border-radius:12px;background:#fff;font-size:24px;font-weight:800;line-height:36px;text-align:center;color:#6a3fb0}
+.esc{position:absolute;left:20px;bottom:10px;font-size:14px;font-weight:700;color:#7a5aa8}
+/* HUD：左の札（曲名・スコア・コンボ）と、右の札（サーバーHP・のこり時間） */
+#hud{position:absolute;inset:0;pointer-events:none;font-weight:800}
+.hp1{position:absolute;padding:12px 18px;border-radius:22px;background:rgba(255,255,255,.75);text-align:center}
+#hl{left:16px;top:16px;width:215px}
+#hr{right:16px;top:16px;width:235px}
+#sn{font-size:16px;color:#8a5cf0}
+.lb{font-size:15px;color:#ff4fa3;margin-top:6px}
+#sc{font-size:34px;line-height:1.1;color:#3b2455}
+#cb{font-size:20px;color:#6a3fb0;margin-top:4px}
+#hpl{font-size:16px;color:#ff4fa3}
+#hp{display:grid;grid-template-columns:repeat(5,1fr);margin:4px 0;font-size:30px;line-height:1.15;color:#ff4fa3}
+#hp i{font-style:normal}
+#hp i.off{color:rgba(255,160,200,.35)}
+#tm{font-size:20px;color:#3b2455}
+#bar{height:12px;margin-top:6px;border-radius:6px;background:rgba(180,150,230,.3);overflow:hidden}
+#bar i{display:block;height:100%;width:0;border-radius:6px;background:#8a5cf0}
+/* 判定テキスト（大優勝！など）。普段は透明。.pop クラスが付くと pop アニメーションで上に浮かんで消える */
+#jd{position:absolute;left:0;right:0;top:250px;text-align:center;font-size:44px;opacity:0;text-shadow:3.0px 0.0px 0 #fff,2.9px 0.8px 0 #fff,2.6px 1.5px 0 #fff,2.1px 2.1px 0 #fff,1.5px 2.6px 0 #fff,0.8px 2.9px 0 #fff,0.0px 3.0px 0 #fff,-0.8px 2.9px 0 #fff,-1.5px 2.6px 0 #fff,-2.1px 2.1px 0 #fff,-2.6px 1.5px 0 #fff,-2.9px 0.8px 0 #fff,-3.0px 0.0px 0 #fff,-2.9px -0.8px 0 #fff,-2.6px -1.5px 0 #fff,-2.1px -2.1px 0 #fff,-1.5px -2.6px 0 #fff,-0.8px -2.9px 0 #fff,-0.0px -3.0px 0 #fff,0.8px -2.9px 0 #fff,1.5px -2.6px 0 #fff,2.1px -2.1px 0 #fff,2.6px -1.5px 0 #fff,2.9px -0.8px 0 #fff}
+#jd.pop{animation:pop .6s ease-out}
+@keyframes pop{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-24px)}}
+#rd{position:absolute;left:0;right:0;top:290px;text-align:center;font-size:30px;text-shadow:0 0 4px #fff,0 0 4px #fff}
+/* ヒット演出の粒。--dx / --dy（飛ぶ距離）を JavaScript から渡し、burst アニメーションで広がって消える */
+.p{position:absolute;width:10px;height:10px;border-radius:50%;background:var(--c);animation:burst .5s ease-out forwards}
+@keyframes burst{to{transform:translate(var(--dx),var(--dy)) scale(.2);opacity:0}}
+/* --- プレイ画面のウイルス --- */
+/* ウイルス1体分の入れ物。大きさ0の点にして、位置は transform:translate() で動かす（view.js の mkVirus が作る）。
+   中身はタイトル画面と同じキャラ（chara.css）。.ch（130×130）を点の中心に置き、--s で小さくする */
+.v{position:absolute;left:0;top:0;width:0;height:0;will-change:transform}
+.v .ch{position:absolute;left:-65px;top:-65px;--s:.62}
+/* --- 画面 --- */
+/* 画面（タイトル／リザルト）の共通スタイル。普段は display:none で隠し、.on が付いた画面だけ表示する（show() が切り替える） */
+.scr{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:11px;text-align:center;z-index:1}
+.scr.on{display:flex}
+h1{margin:0;font-size:47px;line-height:1.1;color:#fff;-webkit-text-stroke:3px var(--pk);paint-order:stroke fill;text-shadow:4px 4px 0 var(--bl)}
+p{margin:0}.sub{font-weight:700}
+.row{display:flex;gap:18px;align-items:stretch;justify-content:center}
+/* ボタンの見た目（ピンクのグラデーション）。.hot を付けるとオレンジ系になる */
+.btn{font:inherit;font-weight:800;color:#fff;border:3px solid #fff;border-radius:36px;padding:12px 22px;cursor:pointer;background:linear-gradient(135deg,var(--pk),#c7a6ff);box-shadow:0 4px 0 #c46fa3}
+.btn.hot{background:linear-gradient(135deg,#ff7aa8,#ff9d5c);box-shadow:0 4px 0 #c4577e}
+.btn small{display:block;font-weight:500;font-size:12px}
+.btn:hover,.btn:focus-visible{transform:translateY(-2px);outline:3px solid var(--bl)}
+.sm{font:inherit;font-size:11px;background:none;border:0;color:var(--ink);opacity:.6;cursor:pointer;text-decoration:underline}
+kbd{display:inline-block;min-width:28px;padding:1px 7px;border-radius:7px;background:#fff;border:2px solid var(--pk);font:inherit;font-weight:800}
+
+/* --- 画面の出し分け（プレイ画面も .scr の仲間にして、.on が付いた画面だけ表示する） --- */
+#play{display:none;background:none}
+#play.on{display:block}
+
+/* --- 曲選択画面（#select） --- */
+.hd{margin:0;font-size:40px;font-weight:900;color:#ff4fa3;text-shadow:5.0px 0.0px 0 #fff,5.0px 0.6px 0 #fff,4.9px 1.1px 0 #fff,4.7px 1.7px 0 #fff,4.5px 2.2px 0 #fff,4.2px 2.7px 0 #fff,3.9px 3.1px 0 #fff,3.5px 3.5px 0 #fff,3.1px 3.9px 0 #fff,2.7px 4.2px 0 #fff,2.2px 4.5px 0 #fff,1.7px 4.7px 0 #fff,1.1px 4.9px 0 #fff,0.6px 5.0px 0 #fff,0.0px 5.0px 0 #fff,-0.6px 5.0px 0 #fff,-1.1px 4.9px 0 #fff,-1.7px 4.7px 0 #fff,-2.2px 4.5px 0 #fff,-2.7px 4.2px 0 #fff,-3.1px 3.9px 0 #fff,-3.5px 3.5px 0 #fff,-3.9px 3.1px 0 #fff,-4.2px 2.7px 0 #fff,-4.5px 2.2px 0 #fff,-4.7px 1.7px 0 #fff,-4.9px 1.1px 0 #fff,-5.0px 0.6px 0 #fff,-5.0px 0.0px 0 #fff,-5.0px -0.6px 0 #fff,-4.9px -1.1px 0 #fff,-4.7px -1.7px 0 #fff,-4.5px -2.2px 0 #fff,-4.2px -2.7px 0 #fff,-3.9px -3.1px 0 #fff,-3.5px -3.5px 0 #fff,-3.1px -3.9px 0 #fff,-2.7px -4.2px 0 #fff,-2.2px -4.5px 0 #fff,-1.7px -4.7px 0 #fff,-1.1px -4.9px 0 #fff,-0.6px -5.0px 0 #fff,-0.0px -5.0px 0 #fff,0.6px -5.0px 0 #fff,1.1px -4.9px 0 #fff,1.7px -4.7px 0 #fff,2.2px -4.5px 0 #fff,2.7px -4.2px 0 #fff,3.1px -3.9px 0 #fff,3.5px -3.5px 0 #fff,3.9px -3.1px 0 #fff,4.2px -2.7px 0 #fff,4.5px -2.2px 0 #fff,4.7px -1.7px 0 #fff,4.9px -1.1px 0 #fff,5.0px -0.6px 0 #fff,0 0 14px #ff8fc7}
+
+/* --- タイトル画面の「本日のトップ」（#today）：曲ごとに1行 --- */
+#today{width:900px;padding:8px 24px 10px;border-radius:22px;background:rgba(255,255,255,.7);font-size:16px;font-weight:700;line-height:1.5;color:var(--ink)}
+#today h3{margin:0 0 2px;font-size:16px;color:#ff4fa3}
+#today .tr{display:flex;justify-content:center;gap:34px}
+#today .tr em{font-style:normal;font-weight:900}
+
+/* ここから下はタイトル画面専用のCSS。タイトル文字・キャラ3体・背景の格子など */
+/* --- タイトル画面（キャラ紹介デザイン） --- */
+#title{justify-content:center;gap:12px}
+#title #go{margin-top:6px;padding:12px 44px;font-size:22px}
+/* 背景に浮かぶハート・星の置き場。個々の要素は JavaScript が作り、rise アニメーションで上に昇る */
+#fl{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:0}
+#fl i{position:absolute;bottom:-30px;font-style:normal;opacity:.55;animation:rise linear infinite}
+@keyframes rise{to{transform:translateY(-660px) rotate(20deg)}}
+/* タイトル文字：同じ文字を2枚重ねている。.bk＝白い縁取り＋光（奥）、.fr＝虹色グラデーション（手前）。背景グラデーションを文字の形で切り抜く（background-clip:text） */
+.ttl{display:grid;justify-items:center;margin:8px 0 10px;font-size:56px;font-weight:900;line-height:1.2;white-space:nowrap}
+.ttl span{grid-area:1/1}
+.ttl small{font-size:.66em;margin-right:.08em}  /* 「ゆめかわ★」は枕詞なので小さく */
+.ttl i{font-style:normal;margin:0 -.16em}       /* 「・」の両側を詰めて、「ウイルス・ぽっぷ」をひとまとまりに */
+.ttl .bk{color:#fff;text-shadow:8.0px 0.0px 0 #fff,7.9px 0.9px 0 #fff,7.8px 1.8px 0 #fff,7.6px 2.6px 0 #fff,7.2px 3.5px 0 #fff,6.8px 4.3px 0 #fff,6.3px 5.0px 0 #fff,5.7px 5.7px 0 #fff,5.0px 6.3px 0 #fff,4.3px 6.8px 0 #fff,3.5px 7.2px 0 #fff,2.6px 7.6px 0 #fff,1.8px 7.8px 0 #fff,0.9px 7.9px 0 #fff,0.0px 8.0px 0 #fff,-0.9px 7.9px 0 #fff,-1.8px 7.8px 0 #fff,-2.6px 7.6px 0 #fff,-3.5px 7.2px 0 #fff,-4.3px 6.8px 0 #fff,-5.0px 6.3px 0 #fff,-5.7px 5.7px 0 #fff,-6.3px 5.0px 0 #fff,-6.8px 4.3px 0 #fff,-7.2px 3.5px 0 #fff,-7.6px 2.6px 0 #fff,-7.8px 1.8px 0 #fff,-7.9px 0.9px 0 #fff,-8.0px 0.0px 0 #fff,-7.9px -0.9px 0 #fff,-7.8px -1.8px 0 #fff,-7.6px -2.6px 0 #fff,-7.2px -3.5px 0 #fff,-6.8px -4.3px 0 #fff,-6.3px -5.0px 0 #fff,-5.7px -5.7px 0 #fff,-5.0px -6.3px 0 #fff,-4.3px -6.8px 0 #fff,-3.5px -7.2px 0 #fff,-2.6px -7.6px 0 #fff,-1.8px -7.8px 0 #fff,-0.9px -7.9px 0 #fff,-0.0px -8.0px 0 #fff,0.9px -7.9px 0 #fff,1.8px -7.8px 0 #fff,2.6px -7.6px 0 #fff,3.5px -7.2px 0 #fff,4.3px -6.8px 0 #fff,5.0px -6.3px 0 #fff,5.7px -5.7px 0 #fff,6.3px -5.0px 0 #fff,6.8px -4.3px 0 #fff,7.2px -3.5px 0 #fff,7.6px -2.6px 0 #fff,7.8px -1.8px 0 #fff,7.9px -0.9px 0 #fff,0 0 18px #ff8fc7,0 0 34px #ff8fc7}
+.ttl .fr{background:linear-gradient(90deg,#ff3fa0,#b84df0 50%,#2aa6f5);-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub2{font-size:21px;font-weight:800;text-shadow:0 0 6px #fff,0 0 6px #fff}
+.chars{display:flex;gap:60px;margin-top:14px}
+.cc{width:250px}
+.cc .ch{--s:.86;margin:0 auto -8px}  /* 題字・サブタイトルとぶつからないよう、少し小さく */
+.cc:nth-child(2) .ch{animation-delay:-.8s}.cc:nth-child(3) .ch{animation-delay:-1.6s}
+.nm{white-space:nowrap;margin-top:8px;font-size:24px;font-weight:800;text-shadow:0 0 6px #fff,0 0 6px #fff,0 0 6px #fff}
+.qt{font-size:15px;font-weight:700;color:#7a5aa8}
+
+/* --- セレクト画面の曲カード（クラス名は s で始める。.cr などはキャラの部品で使っていて、同じ名前だと見た目が混ざってしまう）
+   3枚を横に並べる。.on が付いたものが「選んでいる曲」（青い枠で強調）。カードの中は、上から 曲名 → キャラ → 星とラベル → レーン・長さ → キー --- */
+#select{gap:22px}
+/* --- タイトルへ戻るボタン（セレクト画面とリザルト画面の左上）。.back を付けたボタン --- */
+.back{position:absolute;left:16px;top:10px;font:inherit;font-size:14px;font-weight:700;color:var(--ink);padding:3px 14px;border:2px solid #cdb6ff;border-radius:16px;background:rgba(255,255,255,.8);cursor:pointer;z-index:2}
+.back:hover,.back:focus-visible{background:#fff;border-color:#6fb3ff;outline:none}
+.back small{font-size:11px;font-weight:500;opacity:.7}
+.back:disabled{opacity:.4;cursor:default}
+#cards{display:flex;gap:32px}
+.card{width:286px;padding:18px 20px 20px;display:flex;flex-direction:column;align-items:center;gap:8px;border:3px solid #cdb6ff;border-radius:24px;background:rgba(255,255,255,.72);cursor:pointer}
+.card.on{border-color:#6fb3ff;background:#fff;box-shadow:0 0 0 5px rgba(100,170,255,.45)}
+.card .slot{--w:100px;margin:12px 0 0}
+.card .ch{--s:.72}
+.scn{font-size:22px;font-weight:800;display:flex;align-items:center;gap:8px;white-space:nowrap}
+.scn b{display:grid;place-items:center;width:28px;height:28px;border-radius:50%;color:#fff;font-size:16px}
+.srow{display:flex;align-items:center;gap:10px}
+.sstar{font-size:20px;color:#f5a623}
+.slb{display:inline-block;white-space:nowrap;padding:1px 14px;border-radius:14px;color:#fff;font-size:15px;font-weight:800}
+.sinfo{font-size:15px;font-weight:700}
+.skey{margin-top:-4px;font-size:13px;font-weight:700;opacity:.7}
+.tip{width:800px;padding:12px 24px;border-radius:20px;background:rgba(255,255,255,.72);font-size:15px;font-weight:700;line-height:1.6}
+.hint{font-size:14px;font-weight:700;color:#7a5aa8}
+
+/* ============================================================
+   result.css（岡野）　リザルト画面（認定証・ランキング）の見た目
+   ------------------------------------------------------------
+   ・触るのはこのファイルだけ。HTMLの構造（index.html の #result）は松井が作る。
+   ・使える id / class：
+       .cert（認定証の枠）、#rn（曲名）、#rk（ランク）、#rcm（ランクのコメント）、#rt（防衛率）、
+       #rs（スコア）、#rm（最大コンボ）、.stamp（認定スタンプ）、.slot（キャラの飾りの枠）、#rday（日付）、
+       #rh（見出し：防衛成功／サーバーダウン）、#rl（ランキング）、#rl .me（今回の記録の強調）、#again、#home（ボタン）
+       【できれば】#nm（名前の入力欄）、#nmh（名前の案内）、#tip（豆知識の枠）、#tipt（豆知識の文）
+   ・キャラの飾りは chara.css のキャラを、.slot（小さく並べる枠）に入れて使う。
+   ・色の変数（--pk=ピンク、--bl=水色、--ink=文字色）と、.btn は style.css にある。
+   ============================================================ */
+#result{flex-direction:row;align-items:center;gap:40px;padding:0 50px}
+.rleft{display:flex;flex-direction:column;gap:12px;width:440px}
+.cert{position:relative;padding:12px;border-radius:26px;background:#fff;box-shadow:0 6px 18px rgba(120,80,170,.25)}
+.cert .in{position:relative;padding:14px 20px 12px;border:6px double #ff8fc7;border-radius:18px;text-align:center}
+.cert .in::before{content:"";position:absolute;inset:6px;border:2px solid #cdb6ff;border-radius:12px;pointer-events:none}
+.cert h2{margin:0;font-size:21px;color:#a24df0}
+#rn{margin:2px 0 0;font-size:14px;font-weight:700;color:#8a6aa8}
+.rank{margin-top:2px;font-size:72px;font-weight:900;line-height:1.1;color:#ff4fa3;text-shadow:5.0px 0.0px 0 #ffd0ea,5.0px 0.6px 0 #ffd0ea,4.9px 1.1px 0 #ffd0ea,4.7px 1.7px 0 #ffd0ea,4.5px 2.2px 0 #ffd0ea,4.2px 2.7px 0 #ffd0ea,3.9px 3.1px 0 #ffd0ea,3.5px 3.5px 0 #ffd0ea,3.1px 3.9px 0 #ffd0ea,2.7px 4.2px 0 #ffd0ea,2.2px 4.5px 0 #ffd0ea,1.7px 4.7px 0 #ffd0ea,1.1px 4.9px 0 #ffd0ea,0.6px 5.0px 0 #ffd0ea,0.0px 5.0px 0 #ffd0ea,-0.6px 5.0px 0 #ffd0ea,-1.1px 4.9px 0 #ffd0ea,-1.7px 4.7px 0 #ffd0ea,-2.2px 4.5px 0 #ffd0ea,-2.7px 4.2px 0 #ffd0ea,-3.1px 3.9px 0 #ffd0ea,-3.5px 3.5px 0 #ffd0ea,-3.9px 3.1px 0 #ffd0ea,-4.2px 2.7px 0 #ffd0ea,-4.5px 2.2px 0 #ffd0ea,-4.7px 1.7px 0 #ffd0ea,-4.9px 1.1px 0 #ffd0ea,-5.0px 0.6px 0 #ffd0ea,-5.0px 0.0px 0 #ffd0ea,-5.0px -0.6px 0 #ffd0ea,-4.9px -1.1px 0 #ffd0ea,-4.7px -1.7px 0 #ffd0ea,-4.5px -2.2px 0 #ffd0ea,-4.2px -2.7px 0 #ffd0ea,-3.9px -3.1px 0 #ffd0ea,-3.5px -3.5px 0 #ffd0ea,-3.1px -3.9px 0 #ffd0ea,-2.7px -4.2px 0 #ffd0ea,-2.2px -4.5px 0 #ffd0ea,-1.7px -4.7px 0 #ffd0ea,-1.1px -4.9px 0 #ffd0ea,-0.6px -5.0px 0 #ffd0ea,-0.0px -5.0px 0 #ffd0ea,0.6px -5.0px 0 #ffd0ea,1.1px -4.9px 0 #ffd0ea,1.7px -4.7px 0 #ffd0ea,2.2px -4.5px 0 #ffd0ea,2.7px -4.2px 0 #ffd0ea,3.1px -3.9px 0 #ffd0ea,3.5px -3.5px 0 #ffd0ea,3.9px -3.1px 0 #ffd0ea,4.2px -2.7px 0 #ffd0ea,4.5px -2.2px 0 #ffd0ea,4.7px -1.7px 0 #ffd0ea,4.9px -1.1px 0 #ffd0ea,5.0px -0.6px 0 #ffd0ea}
+#rcm{margin:0;font-size:24px;font-weight:900;color:#8a5cf0}
+#rt{margin-top:6px;font-size:22px;font-weight:900}
+#rs{font-size:20px;font-weight:800}
+#rm{font-size:16px;font-weight:700;color:#6a3fb0}
+.cert .ft{display:flex;justify-content:space-between;align-items:center;margin-top:4px}
+.cert .deco{display:flex;align-items:center;gap:4px}
+.cert .slot{--w:60px}
+.cert .ch{--s:.46}
+.stamp{display:grid;place-items:center;width:68px;height:68px;border:5px double #ee5a95;border-radius:50%;color:#ee5a95;font-size:20px;font-weight:900;transform:rotate(-12deg)}
+#rday{margin-top:2px;font-size:13px;font-weight:700;color:#8a6aa8}
+.rside{display:flex;flex-direction:column;align-items:center;gap:12px;width:430px}
+#rh{margin:0;font-size:40px;font-weight:900;color:#ff4fa3;text-shadow:5.0px 0.0px 0 #fff,5.0px 0.6px 0 #fff,4.9px 1.1px 0 #fff,4.7px 1.7px 0 #fff,4.5px 2.2px 0 #fff,4.2px 2.7px 0 #fff,3.9px 3.1px 0 #fff,3.5px 3.5px 0 #fff,3.1px 3.9px 0 #fff,2.7px 4.2px 0 #fff,2.2px 4.5px 0 #fff,1.7px 4.7px 0 #fff,1.1px 4.9px 0 #fff,0.6px 5.0px 0 #fff,0.0px 5.0px 0 #fff,-0.6px 5.0px 0 #fff,-1.1px 4.9px 0 #fff,-1.7px 4.7px 0 #fff,-2.2px 4.5px 0 #fff,-2.7px 4.2px 0 #fff,-3.1px 3.9px 0 #fff,-3.5px 3.5px 0 #fff,-3.9px 3.1px 0 #fff,-4.2px 2.7px 0 #fff,-4.5px 2.2px 0 #fff,-4.7px 1.7px 0 #fff,-4.9px 1.1px 0 #fff,-5.0px 0.6px 0 #fff,-5.0px 0.0px 0 #fff,-5.0px -0.6px 0 #fff,-4.9px -1.1px 0 #fff,-4.7px -1.7px 0 #fff,-4.5px -2.2px 0 #fff,-4.2px -2.7px 0 #fff,-3.9px -3.1px 0 #fff,-3.5px -3.5px 0 #fff,-3.1px -3.9px 0 #fff,-2.7px -4.2px 0 #fff,-2.2px -4.5px 0 #fff,-1.7px -4.7px 0 #fff,-1.1px -4.9px 0 #fff,-0.6px -5.0px 0 #fff,-0.0px -5.0px 0 #fff,0.6px -5.0px 0 #fff,1.1px -4.9px 0 #fff,1.7px -4.7px 0 #fff,2.2px -4.5px 0 #fff,2.7px -4.2px 0 #fff,3.1px -3.9px 0 #fff,3.5px -3.5px 0 #fff,3.9px -3.1px 0 #fff,4.2px -2.7px 0 #fff,4.5px -2.2px 0 #fff,4.7px -1.7px 0 #fff,4.9px -1.1px 0 #fff,5.0px -0.6px 0 #fff,0 0 12px #ff8fc7}
+.rlbox{width:100%;padding:12px 16px 14px;border-radius:22px;background:rgba(255,255,255,.75)}
+.rlbox h3{margin:0 0 4px;text-align:center;font-size:17px;color:#ff4fa3}
+/* ランキング：1行＝ 順位・名前・スコア・防衛率 */
+#rl{margin:0;padding:0;list-style:none;font-size:15px;font-weight:700;line-height:1.55}
+#rl li{display:grid;grid-template-columns:2.4em 1fr 6.6em 3.4em;align-items:center;padding:0 8px;border-radius:10px;text-align:right}
+#rl li b{text-align:center;color:#a24df0}
+#rl .rnm{text-align:left;padding-left:6px}
+#rl .me{font-weight:800;color:#e2368a;background:rgba(255,143,199,.2)}
+/* 【できれば】名前の入力欄と案内 */
+#nm{width:7.5em;padding:0 6px;border:2px solid #ff8fc7;border-radius:8px;font:inherit;color:#e2368a;outline:none}
+#nmh{margin-top:6px;font-size:13px;font-weight:700;line-height:1.5;text-align:center;color:#e2368a}
+/* 【できれば】豆知識 */
+#tip{padding:8px 18px 10px;border-radius:20px;background:rgba(255,255,255,.8);border:2px dashed #9fd8ff;text-align:left}
+#tip h3{margin:0;font-size:15px;color:#2a8fd0}
+#tipt{font-size:14px;font-weight:700;line-height:1.5}
+.snap{font-size:14px;font-weight:700}
+#result .row{justify-content:center}
+</style>
+</head><body>
+
+<!-- #app（外枠）の中に #stage（舞台 1067×600）があり、その中に4つの画面が重なっている -->
+<div id="app"><div id="stage">
+
+<!-- 背景に浮かぶハート・星（全画面共通） -->
+<div id="fl"></div>
+
+<!-- ===== タイトル画面（仕様書 3.2） ===== -->
+<section id="title" class="scr on">
+ <div class="ttl"><span class="bk" aria-hidden="true"><small>ゆめかわ★</small>ウイルス<i>・</i>ぽっぷ</span><span class="fr"><small>ゆめかわ★</small>ウイルス<i>・</i>ぽっぷ</span></div>
+ <p class="sub2">〜パステルカラーのサイバー防衛戦！キー連打で大優勝★〜</p>
+ <div class="chars">
+  <div class="cc" data-ch="0"><div class="nm">ぷにぷにランサムちゃん</div><div class="qt">「データを人質にとっちゃうぞ♡」</div></div>
+  <div class="cc" data-ch="1"><div class="nm">てくてくフィッシング</div><div class="qt">「ニセのリンクで釣っちゃうよ〜」</div></div>
+  <div class="cc" data-ch="2"><div class="nm">パニックDDoS</div><div class="qt">「みんなで押しかけるよ！」</div></div>
+ </div>
+ <button class="btn hot" id="go">あそぶ <small>[Enter]</small></button>
+ <div id="today"><h3>★ 本日のトップ ★</h3><div class="tr"></div></div>
+ <button class="sm" id="rst">ランキングをリセット（スタッフ用）</button>
+</section>
+
+<!-- ===== セレクト画面（仕様書 3.3）：曲カードは SONGS から自動で作る ===== -->
+<section id="select" class="scr">
+ <button class="back" id="sback">← タイトルへ <small>[Esc]</small></button>
+ <h2 class="hd">きょくをえらんでね</h2>
+ <div id="cards"></div>
+ <div class="tip">上から落ちてくるウイルスが、下のラインに重なった瞬間にキーを叩いて撃退！<br>見逃すとサーバーHP（ハート）が減るよ。0になったらサーバーダウン…！</div>
+ <p class="hint" id="khint"></p>
+</section>
+
+<!-- ===== プレイ画面（仕様書 3.4）：レーンとウイルスは view.js が作る ===== -->
+<div id="play" class="scr">
+ <div id="lanes"></div>
+ <div id="field"></div>
+ <div id="hud">
+  <div class="hp1" id="hl"><div id="sn"></div><div class="lb">SCORE</div><div id="sc">0</div><div id="cb"></div></div>
+  <div class="hp1" id="hr"><div id="hpl">サーバーHP</div><div id="hp"></div><div id="tm"></div><div id="bar"><i id="bi"></i></div></div>
+  <div id="jd"></div>
+  <div id="rd"></div>
+  <div class="esc">Esc：やめる</div>
+ </div>
+</div>
+
+<!-- ===== リザルト画面（仕様書 3.5） ===== -->
+<section id="result" class="scr">
+ <button class="back" id="rback">← タイトルへ</button>
+ <div class="rleft">
+  <div class="cert"><div class="in">
+   <h2>ゆめかわサイバーアナリスト認定証</h2>
+   <p id="rn"></p>
+   <div class="rank" id="rk"></div>
+   <p id="rcm"></p>
+   <p id="rt"></p>
+   <p id="rs"></p>
+   <p id="rm"></p>
+   <div class="ft"><div class="deco"><div class="slot" data-ch="0"></div><div class="slot" data-ch="1"></div><div class="slot" data-ch="2"></div></div><div class="stamp">認定</div></div>
+   <p id="rday"></p>
+  </div></div>
+  <div id="tip"><h3>💡 セキュリティ豆知識</h3><p id="tipt"></p></div>
+ </div>
+ <div class="rside">
+  <h2 id="rh"></h2>
+  <div class="rlbox">
+   <h3>この曲のランキング</h3>
+   <ol id="rl"></ol>
+   <p id="nmh">ランクイン！ なまえを入れて Enter（6文字まで）<br>そのまま Enter で「ななし」になるよ</p>
+  </div>
+  <div class="row">
+   <button class="btn hot" id="again">もういちどあそぶ <small>[Enter]</small></button>
+   <button class="btn" id="home">きょくをえらぶ <small>[Esc]</small></button>
+  </div>
+  <p class="snap">スマホで撮って記念にしてね📷</p>
+ </div>
+</section>
+
+</div></div>
+
+<script>
+'use strict';
+// 共通の短縮形：$(id) … document.getElementById
+const $ = id => document.getElementById(id);
+
+/* ============================================================
+   ===== charts.js（中山）　曲データ SONGS（仕様書 8.1） =====
+   ------------------------------------------------------------
+   ・曲を増やすときは、末尾に1つ足す（並びは変えない。ランキングの保存キーが曲の番号なので）。
+   ・chart の書き方：音名（C4＝真ん中のド）＋「:拍の数」（省略で1拍）。R＝休み。
+     同時に落とす音は + でつなぐ（先に書いた音がメロディ）。例）G4+C4:2
+   ・chara … セレクト画面のカードに出すキャラ（0：ランサム、1：フィッシング、2：DDoS）
+   ・santa … true にすると、フィッシングがサンタの帽子になる（カードとプレイ中）
+   ============================================================ */
+const SONGS = [
+  { name: 'きらきら星', star: 1, label: 'やさしい', col: '#3fbf7f', lanes: 2, bpm: 100, fall: 2.2, chara: 2,
+    chart: 'C4 C4 G4 G4 A4 A4 G4:2 F4 F4 E4 E4 D4 D4 C4:2 G4 G4 F4 F4 E4 E4 D4:2 G4 G4 F4 F4 E4 E4 D4:2 C4 C4 G4 G4 A4 A4 G4:2 F4 F4 E4 E4 D4 D4 C4:2' },
+  { name: 'ジングルベル', star: 3, label: 'ふつう', col: '#e0a000', lanes: 4, bpm: 120, fall: 1.6, chara: 1, santa: true,
+    chart: 'E4 E4 E4:2 E4 E4 E4:2 E4 G4 C4:1.5 D4:.5 E4:4 F4 F4 F4:1.5 F4:.5 F4 E4 E4 E4:.5 E4:.5 G4 G4 F4 D4 C4:4 ' +
+           'E4 E4 E4:2 E4 E4 E4:2 E4 G4 C4:1.5 D4:.5 E4:4 F4 F4 F4:1.5 F4:.5 F4 E4 E4 E4:.5 E4:.5 G4 G4 F4 D4 C4:4' },
+  // 【仮】天国と地獄：本物のメロディではない。+ の同時ノーツの見本として、各まとまりの最後に和音を入れてある
+  { name: '天国と地獄', star: 5, label: 'げきむず', col: '#ff3b6b', lanes: 4, bpm: 140, fall: 1.4, chara: 0,
+    chart: ('C5:.5 B4:.5 A4:.5 G4:.5 A4:.5 G4:.5 F4:.5 E4:.5 G4:.5 A4:.5 B4:.5 C5:.5 D5:.5 E5:.5 G5+C5:1 ' +
+            'E5:.5 E5:.5 E5:.5 E5:.5 D5:.5 D5:.5 C5+E4:1 C5:1 R:.5 G4:.5 C5+G4:1 R:.5 G4:.5 ').repeat(6) },
+];
+
+/* ============================================================
+   ===== ranking.js（松井）　ランキング Ranking（仕様書 8.2、8.3、10.1） =====
+   ------------------------------------------------------------
+   ・曲ごとに LocalStorage のキー yumekawa_hs_0、yumekawa_hs_1 … に、上位10件を保存する。
+   ・記録の形：{ s: スコア, r: 防衛率, at: 登録時刻（Date.now()）, n: 名前 }
+   ・LocalStorage が使えなくても止まらないよう、読み書きは try/catch で囲み、
+     中身はメモリ（D）にも持っておく（その場合、ページを開いている間だけ残る）。
+   ============================================================ */
+const Ranking = (() => {
+  const D = {};                                   // D[k] … k番目の曲の記録（スコアの高い順、最大10件）
+  const KEY = k => 'yumekawa_hs_' + k;
+  function list(k) {                              // 読み込み（はじめの1回だけ LocalStorage から）
+    if (!D[k]) {
+      try { const v = JSON.parse(localStorage.getItem(KEY(k)) || '[]'); D[k] = Array.isArray(v) ? v : []; }
+      catch (e) { D[k] = []; }
+    }
+    return D[k];
+  }
+  function save(k) { try { localStorage.setItem(KEY(k), JSON.stringify(D[k])); } catch (e) { /* 保存できなくても続ける */ } }
+  const sameDay = (a, b) => new Date(a).toDateString() === new Date(b).toDateString();
+  return {
+    // 記録を追加して保存し、追加した記録を返す（10位より下なら、保存はされない）
+    add(k, s, r) {
+      const me = { s, r, at: Date.now(), n: 'ななし' };
+      const l = list(k);
+      l.push(me);
+      l.sort((a, b) => b.s - a.s || a.at - b.at);  // スコアの高い順。同点は先に出した人が上
+      D[k] = l.slice(0, 10);
+      save(k);
+      return me;
+    },
+    // 【できれば】登録時刻 at の記録の名前を n にする
+    setName(k, at, n) {
+      const e = list(k).find(x => x.at === at);
+      if (e) { e.n = n; save(k); }
+    },
+    top10(k) { return list(k).slice(0, 10); },
+    // 本日のトップ：今日の記録のうち、いちばん高いもの（なければ null）
+    todayTop(k) { return list(k).filter(x => sameDay(x.at, Date.now())).sort((a, b) => b.s - a.s)[0] || null; },
+    reset() {
+      SONGS.forEach((_, k) => { D[k] = []; try { localStorage.removeItem(KEY(k)); } catch (e) {} });
+    },
+  };
+})();
+
+/* ============================================================
+   ===== tips.js（岡野）【できれば】セキュリティ豆知識 TIPS（仕様書 8.4） =====
+   ・1つ40文字くらいまで。中学生にも分かる言葉で。以下は仮の文（岡野さんが書きかえる）
+   ============================================================ */
+const TIPS = [
+  'パスワードは、サイトごとに別のものにしよう。1つもれても、ほかのサイトは守れるよ。',
+  'ふしぎなメールのリンクは、すぐに開かないでね。公式のアプリやサイトから確かめよう。',
+  'スマホやパソコンの「アップデート」は、ウイルスから守るための大事なお知らせだよ。',
+];
+
+/* ============================================================
+   ===== audio.js（中山）　音 Sound（仕様書 7章） =====
+   ------------------------------------------------------------
+   ・すべて Web Audio API で合成する（音声ファイルなし）。
+   ・BGM：ドラム（キック・ハイハット・クラップ）とベース。曲の BPM に合わせて、少し先まで予約する。
+   ・薄いメロディ：曲のメロディ（+ の先頭の音）を、小さい音で流し続ける。
+   ・撃退したとき：そのノーツの音を、薄いメロディより大きく鳴らす。
+   ・音色・音量は【遊びながら調整する】（数字はサンプルからの出発点）。
+   ============================================================ */
+const Sound = (() => {
+  let ctx = null, noise = null;
+  const BASS = [130.8, 110, 87.3, 98];          // ベースのコード進行（C→Am→F→G）。どの曲もハ長調なので共通
+  const VOL = { melody: .07, hit: .3, bass: .22 };
+  function tone(f, at, d, type, v) {            // 「ポン」と鳴って消える音
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = type; o.frequency.value = f;
+    g.gain.setValueAtTime(v, at); g.gain.exponentialRampToValueAtTime(.001, at + d);
+    o.connect(g).connect(ctx.destination); o.start(at); o.stop(at + d);
+  }
+  function kick(at) {                           // 高い音から低い音へ素早く下げると「ドン」
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.frequency.setValueAtTime(150, at); o.frequency.exponentialRampToValueAtTime(40, at + .15);
+    g.gain.setValueAtTime(.5, at); g.gain.exponentialRampToValueAtTime(.001, at + .2);
+    o.connect(g).connect(ctx.destination); o.start(at); o.stop(at + .2);
+  }
+  function hiss(at, d, v, hp) {                 // ノイズ＋ハイパスで、ハイハット・クラップ
+    const s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+    s.buffer = noise; f.type = 'highpass'; f.frequency.value = hp;
+    g.gain.setValueAtTime(v, at); g.gain.exponentialRampToValueAtTime(.001, at + d);
+    s.connect(f).connect(g).connect(ctx.destination); s.start(at); s.stop(at + d);
+  }
+  return {
+    // AudioContext は、最初の曲の開始操作のときに作る（ブラウザの決まりで、操作の後でないと音が出ない）
+    init() {
+      if (!ctx) {
+        ctx = new (window.AudioContext || window.webkitAudioContext)();
+        noise = ctx.createBuffer(1, ctx.sampleRate * .3, ctx.sampleRate);
+        const d = noise.getChannelData(0);
+        for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+      }
+      ctx.resume();
+    },
+    now() { return ctx.currentTime; },          // 時計（判定・位置の基準。仕様書 5.3）
+    // BGMと薄いメロディを、0.3秒先までまとめて予約する（毎フレーム呼ぶ）。S はゲームの状態
+    sched(S) {
+      const spb = 60 / S.bpm, sp = spb / 4, ahead = ctx.currentTime + .3;
+      while (S.t0 + S.step * sp < ahead) {      // 16分音符ごとのドラム・ベース
+        const i = S.step++, at = S.t0 + i * sp, s = i % 16, b = (i >> 4) % 4;
+        if (s % 4 === 0) kick(at);
+        if (s % 4 === 2) hiss(at, .05, .12, 7000);
+        if (s === 4 || s === 12) hiss(at, .12, .18, 1500);
+        if ([0, 6, 8, 14].includes(s)) tone(BASS[b], at, .25, 'triangle', VOL.bass);
+      }
+      while (S.mel < S.notes.length && S.t0 + S.notes[S.mel].t < ahead) {   // 薄いメロディ
+        const n = S.notes[S.mel++];
+        if (n.mel) tone(n.f, S.t0 + n.t, Math.min(.6, n.d * spb), 'sine', VOL.melody);
+      }
+    },
+    hit(f, sec) { tone(f, ctx.currentTime, Math.min(.6, sec), 'triangle', VOL.hit); },   // 撃退した音
+  };
+})();
+
+/* ============================================================
+   ===== view.js（中山）　プレイ画面の部品 View（仕様書 3.4、6章） =====
+   ------------------------------------------------------------
+   ・レーン、判定リング、キー札、ウイルス、HUD、判定表示、ヒット演出を作る・書きかえる。
+   ・ウイルスの見た目は、タイトル画面と同じキャラ（CHARA_HTML）を使う。
+   ============================================================ */
+const W = 1067, HY = 500;                         // 舞台の幅、判定ラインの高さ（y=500）
+const LANE_COLS = ['#ff8fc7', '#4fd8ff', '#9ff2d0', '#ffe66b'];
+// キャラ3体のHTML（chara.css の先頭に書いた形）。santa=true でフィッシングがサンタの帽子
+function charaHTML(ty, santa) {
+  return [
+    '<div class="ch"><i class="stars"></i><div class="fc c0"><i class="lk"></i><i class="e"></i><i class="e r"></i><i class="bl"></i><i class="bl r"></i><i class="m"></i></div></div>',
+    '<div class="ch"><div class="fc c1' + (santa ? ' santa' : '') + '"><i class="hk"></i><i class="cr"></i><i class="br"></i><i class="e"></i><i class="e r"></i><i class="bl"></i><i class="bl r"></i><i class="m"></i></div></div>',
+    '<div class="ch"><div class="fc c2"><i class="an"></i><i class="an r"></i><i class="xx">&gt;_&lt;</i><i class="bl"></i><i class="bl r"></i></div></div>',
+  ][ty];
+}
+const View = {
+  lx(n, l) { return (W - n * 110) / 2 + l * 110 + 55; },     // レーン l の中心の x（n=レーン数）
+  build(song) {                                               // レーン・判定ライン・リング・キー札を作る
+    const n = song.lanes, L = $('lanes'), left = (W - n * 110) / 2, keys = n === 2 ? 'FJ' : 'DFJK';
+    let h = '<div class="jl" style="left:' + left + 'px;width:' + n * 110 + 'px"></div>';
+    for (let l = 0; l < n; l++) {
+      const x = left + l * 110;
+      h += '<div class="lane" style="left:' + x + 'px"></div>' +
+           '<div class="rc" id="rc' + l + '" style="left:' + (x + 15) + 'px;--c:' + LANE_COLS[l] + '"></div>' +
+           '<div class="kl" style="left:' + (x + 27) + 'px">' + keys[l] + '</div>';
+    }
+    L.innerHTML = h;
+    $('field').innerHTML = '';
+    $('sn').textContent = song.name;
+    $('jd').className = ''; $('jd').textContent = '';
+  },
+  mkVirus(ty, santa) {                                        // ウイルス1体（.v は大きさ0の点）
+    const v = document.createElement('div');
+    v.className = 'v'; v.innerHTML = charaHTML(ty, santa);
+    $('field').appendChild(v);
+    return v;
+  },
+  move(el, x, y) { el.style.transform = 'translate(' + x + 'px,' + y + 'px)'; },
+  setHud(S) {                                                 // スコア・コンボ・HP（変わったときだけ呼ぶ）
+    $('sc').textContent = S.score.toLocaleString();
+    $('cb').textContent = S.combo > 1 ? S.combo + ' COMBO' : '';
+    const hp = Math.max(S.hp, 0);
+    $('hp').innerHTML = '<i>♥</i>'.repeat(hp) + '<i class="off">♥</i>'.repeat(10 - hp);
+  },
+  setTime(left, rate) {                                       // のこり時間（秒）と進行バー（0〜1）
+    const s = Math.max(0, Math.ceil(left));
+    $('tm').textContent = 'のこり ' + Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+    $('bi').style.width = Math.min(100, Math.max(0, rate * 100)) + '%';
+  },
+  ready(on) { $('rd').textContent = on ? 'じゅんびしてね…' : ''; },
+  say(tx, c) {                                                // 判定表示（クラスを付け直してアニメーションを最初から）
+    const j = $('jd'); j.textContent = tx; j.style.color = c;
+    j.classList.remove('pop'); void j.offsetWidth; j.classList.add('pop');
+  },
+  flash(l) { const r = $('rc' + l); r.classList.add('f'); setTimeout(() => r.classList.remove('f'), 100); },
+  burst(x) {                                                  // ヒット演出：粒12個が四方に飛ぶ
+    for (let i = 0; i < 12; i++) {
+      const p = document.createElement('div'), a = Math.random() * 6.28, d = 40 + Math.random() * 50;
+      p.className = 'p';
+      p.style.cssText = 'left:' + (x - 5) + 'px;top:' + (HY - 5) + 'px;--c:' + LANE_COLS[i % 4] + ';--dx:' + Math.cos(a) * d + 'px;--dy:' + Math.sin(a) * d + 'px';
+      p.onanimationend = () => p.remove();
+      $('field').appendChild(p);
+    }
+  },
+  clear() { $('field').innerHTML = ''; },
+};
+
+/* ============================================================
+   ===== game.js（中山）　ゲーム本体 Game（仕様書 5章、10.1、10.2） =====
+   ------------------------------------------------------------
+   ・Game.start(k) / Game.stop() / Game.key(code) / Game.onFinish(result)
+   ・時刻はすべて Sound.now()（Web Audio の時計）から計算する。
+   ============================================================ */
+const Game = (() => {
+  const NOTE = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+  const JUDGE = [{ tx: '大優勝！', c: '#ff4fa3', pt: 300 }, { tx: '神！', c: '#3bb8ff', pt: 200 }, { tx: '超かわよ！', c: '#9a6bff', pt: 100 }];
+  let S = null;                                   // いまのプレイの状態
+
+  // 音名 → MIDI番号（C4=60）
+  function midi(p) { return NOTE[p[0]] + (p[1] === '#' ? 1 : 0) + 12 * (+p.slice(-1) + 1); }
+  // 譜面の文字列 → [{ms:[音の番号…] または null（休み）, d:拍}]
+  function parse(str) {
+    return str.trim().split(/\s+/).map(tk => {
+      const [p, d] = tk.split(':');
+      return { ms: p === 'R' ? null : p.split('+').map(midi), d: d ? +d : 1 };
+    });
+  }
+  // 【譜面の作成】仕様書 5.2
+  function chart(song) {
+    const spb = 60 / song.bpm, lead = Math.ceil((song.fall + .3) / spb) * spb, seq = parse(song.chart);
+    const ps = [...new Set(seq.flatMap(x => x.ms || []))].sort((a, b) => a - b);   // 出てくる音（低い順）
+    const notes = []; let b = 0;
+    for (const x of seq) {
+      if (x.ms) {
+        const used = [];
+        x.ms.forEach((m, i) => {
+          let l = Math.floor(ps.indexOf(m) * song.lanes / ps.length);
+          if (used.includes(l)) l = l + 1 < song.lanes ? l + 1 : l - 1;        // 同じレーンなら隣へずらす
+          used.push(l);
+          notes.push({ t: lead + b * spb, l, ty: l % 3, h: 0, el: null, f: 440 * 2 ** ((m - 69) / 12), d: x.d, mel: i === 0 });
+        });
+      }
+      b += x.d;
+    }
+    return { notes, lead, dur: b * spb };
+  }
+  // 【キー → レーン】D F J K（2レーンは F J）、上段の数字 1〜4。テンキーは使わない
+  function laneOf(code, n) {
+    const d = /^Digit([1-4])$/.exec(code);
+    if (d) return +d[1] - 1 < n ? +d[1] - 1 : -1;
+    const k = n === 2 ? { KeyF: 0, KeyJ: 1 } : { KeyD: 0, KeyF: 1, KeyJ: 2, KeyK: 3 };
+    return code in k ? k[code] : -1;
+  }
+  function loop() {
+    if (!S || !S.run) return;
+    const t = Sound.now() - S.t0, song = S.song;
+    Sound.sched(S);
+    while (S.nxt < S.notes.length && S.notes[S.nxt].t - t < song.fall * 1.15) {   // 出現
+      const n = S.notes[S.nxt++];
+      n.el = View.mkVirus(n.ty, song.santa);
+      S.live.push(n);
+    }
+    S.live = S.live.filter(n => {                                                // 移動・ミス
+      if (n.h) { n.el.remove(); return false; }
+      if (t - n.t > .2) { n.h = -1; n.el.remove(); miss(); return false; }
+      View.move(n.el, View.lx(song.lanes, n.l), HY - (n.t - t) / song.fall * (HY + 30));
+      return true;
+    });
+    View.setTime(Math.min(S.dur, S.lead + S.dur - t), (t - S.lead) / S.dur);
+    if (t > S.lead - .5) View.ready(false);
+    if (S.hp <= 0 || t > S.end) { finish(); return; }
+    requestAnimationFrame(loop);
+  }
+  function miss() { S.hp--; S.combo = 0; View.setHud(S); View.say('ざんねん…', '#8a7bb0'); }
+  function press(l) {
+    const t = Sound.now() - S.t0;
+    View.flash(l);
+    let best = null;
+    for (const n of S.live) if (!n.h && n.l === l) { const d = Math.abs(n.t - t); if (d <= .2 && (!best || d < best.d)) best = { n, d }; }
+    if (!best) return;                                   // 空打ちは何もしない
+    best.n.h = 1; S.hit++; S.combo++; S.max = Math.max(S.max, S.combo);
+    const J = JUDGE[best.d < .06 ? 0 : best.d < .12 ? 1 : 2];
+    S.score += J.pt + Math.min(S.combo, 50) * 2;
+    View.setHud(S); View.say(J.tx, J.c);
+    Sound.hit(best.n.f, best.n.d * 60 / S.bpm);
+    View.burst(View.lx(S.song.lanes, l));
+  }
+  function finish() {                                    // 防衛率とランク（仕様書 5.7）を計算して渡す
+    S.run = false;
+    const total = S.notes.length, rate = total ? Math.round(S.hit / total * 100) : 0;
+    const R = rate >= 95 ? ['S', '超大優勝★'] : rate >= 85 ? ['A', '大優勝！'] : rate >= 70 ? ['B', '神！'] : ['C', 'まだまだかわいい'];
+    View.clear();
+    const result = { k: S.k, score: S.score, hit: S.hit, total, max: S.max, dead: S.hp <= 0, rate, rank: R[0], comment: R[1] };
+    if (Game.onFinish) Game.onFinish(result);
+  }
+  return {
+    onFinish: null,                                       // screens.js が中身を設定する
+    start(k) {
+      Sound.init();
+      const song = SONGS[k], ch = chart(song);
+      S = { k, song, bpm: song.bpm, notes: ch.notes, lead: ch.lead, dur: ch.dur, end: ch.lead + ch.dur + 1,
+            t0: Sound.now() + .3, step: 0, mel: 0, hp: 10, score: 0, combo: 0, max: 0, hit: 0, nxt: 0, live: [], run: true };
+      View.build(song); View.setHud(S); View.setTime(ch.dur, 0); View.ready(true);
+      Screens.show('play');
+      requestAnimationFrame(loop);
+    },
+    stop() { if (S) S.run = false; View.clear(); },        // 中断（結果は出さない）
+    key(code) { if (!S || !S.run) return; const l = laneOf(code, S.song.lanes); if (l >= 0) press(l); },
+  };
+})();
+
+/* ============================================================
+   ===== screens.js（松井）　画面 Screens（仕様書 3章、4章、10.1） =====
+   ------------------------------------------------------------
+   ・画面の切り替え、キー入力の振り分け、曲カード、本日のトップ、リザルトの表示。
+   ============================================================ */
+const Screens = (() => {
+  let state = 'title', sel = 0, last = 0, naming = null;   // naming … 名前を入力中の記録（なければ null）
+
+  // 【画面の拡大縮小】舞台（1067×600）を、ウィンドウに収まる最大の倍率で（仕様書 2.1）
+  function fit() {
+    const s = Math.min(innerWidth / W, innerHeight / 600);
+    $('stage').style.transform = 'scale(' + s + ')';
+    $('app').style.width = W * s + 'px'; $('app').style.height = 600 * s + 'px';
+  }
+  // 曲の長さ（秒）＝ 拍の合計 × 1拍の秒数（カードの「約◯秒」用）
+  function songSec(s) { return Math.round(s.chart.trim().split(/\s+/).reduce((a, tk) => a + +(tk.split(':')[1] || 1), 0) * 60 / s.bpm); }
+  const fmt = n => n.toLocaleString();
+
+  function renderToday() {                                // 本日のトップ（曲ごとに1行。仕様書 8.3）
+    const tr = document.querySelector('#today .tr'); tr.innerHTML = '';
+    SONGS.forEach((s, k) => {
+      const e = Ranking.todayTop(k), span = document.createElement('span'), em = document.createElement('em');
+      span.textContent = s.name + '：'; em.textContent = e ? fmt(e.s) + '点' : '--';
+      span.appendChild(em); tr.appendChild(span);
+    });
+  }
+  function buildCards() {                                 // 曲カード（SONGS の数だけ）
+    $('cards').innerHTML = SONGS.map((s, i) =>
+      '<div class="card" data-i="' + i + '">' +
+      '<div class="scn"><b style="background:' + s.col + '">' + (i + 1) + '</b>' + s.name + '</div>' +
+      '<div class="slot">' + charaHTML(s.chara, s.santa) + '</div>' +
+      '<div class="srow"><span class="sstar" style="color:' + s.col + '">' + '★'.repeat(s.star) + '☆'.repeat(5 - s.star) + '</span><span class="slb" style="background:' + s.col + '">' + s.label + '</span></div>' +
+      '<div class="sinfo">' + s.lanes + 'レーン／約' + songSec(s) + '秒</div>' +
+      '<div class="skey">キー：' + (s.lanes === 2 ? 'F J' : 'D F J K') + '</div></div>').join('');
+    document.querySelectorAll('.card').forEach(c => {
+      c.onclick = () => Game.start(+c.dataset.i);
+      c.onmouseenter = () => pick(+c.dataset.i);
+    });
+    $('khint').innerHTML = '← → で選んで Enter ／ <kbd>1</kbd>〜<kbd>' + SONGS.length + '</kbd>キーですぐスタート（Esc：タイトルへ）';
+    pick(0);
+  }
+  function pick(i) { sel = i; document.querySelectorAll('.card').forEach((c, k) => c.classList.toggle('on', k === i)); }
+
+  // 【リザルト】Game.onFinish で受け取った結果を表示する（仕様書 3.5、10.2）
+  function showResult(r) {
+    last = r.k;
+    const d = new Date();
+    $('rn').textContent = SONGS[r.k].name;
+    $('rk').textContent = 'ランク ' + r.rank;
+    $('rcm').textContent = r.comment;
+    $('rt').textContent = '防衛率 ' + r.rate + '%';
+    $('rs').textContent = 'スコア ' + fmt(r.score) + ' 点';
+    $('rm').textContent = '最大コンボ ' + r.max;
+    $('rday').textContent = d.getFullYear() + '年' + (d.getMonth() + 1) + '月' + d.getDate() + '日　学園祭サイバー防衛本部';
+    $('rh').textContent = r.dead ? 'サーバーダウン…！' : '防衛成功！';
+    const me = Ranking.add(r.k, r.score, r.rate);
+    renderRanking(r.k, me);
+    // 【できれば】豆知識：ランダムに1つ
+    const ok = typeof TIPS !== 'undefined' && TIPS.length;
+    $('tip').style.display = ok ? '' : 'none';
+    if (ok) $('tipt').textContent = TIPS[Math.floor(Math.random() * TIPS.length)];
+    show('result');
+    if (naming) $('nm').focus();
+  }
+  function renderRanking(k, me) {
+    const ol = $('rl'); ol.innerHTML = ''; naming = null;
+    Ranking.top10(k).forEach((e, i) => {
+      const li = document.createElement('li'), b = document.createElement('b'), nm = document.createElement('span'),
+            sc = document.createElement('span'), rt = document.createElement('span');
+      b.textContent = i + 1; nm.className = 'rnm'; sc.textContent = fmt(e.s) + '点'; rt.textContent = e.r + '%';
+      if (me && e.at === me.at) {                         // 今回の記録：強調し、【できれば】名前の入力欄を出す
+        li.className = 'me'; naming = e;
+        const inp = document.createElement('input');
+        inp.id = 'nm'; inp.maxLength = 6; inp.placeholder = 'なまえ'; inp.autocomplete = 'off';
+        inp.addEventListener('keydown', nameKey);
+        nm.appendChild(inp);
+      } else nm.textContent = e.n || 'ななし';             // 名前は textContent で表示（HTMLとして解釈させない）
+      li.append(b, nm, sc, rt); ol.appendChild(li);
+    });
+    $('nmh').style.display = naming ? '' : 'none';
+    $('again').disabled = $('home').disabled = $('rback').disabled = !!naming;  // 名前を決めるまで、ボタンは押せない
+  }
+  function nameKey(e) {                                   // 名前の入力欄のキー（仕様書 4章）
+    e.stopPropagation();                                  // 入力中のキーは、ゲームの操作にしない
+    if (e.key === 'Enter' && !e.isComposing && e.keyCode !== 229) { e.preventDefault(); decide(e.target.value); }
+    else if (e.key === 'Escape') { e.preventDefault(); decide(''); }
+  }
+  function decide(v) {
+    const n = Array.from(v.trim()).slice(0, 6).join('') || 'ななし';
+    Ranking.setName(last, naming.at, n);
+    const inp = $('nm'), span = inp.parentNode;
+    inp.blur(); span.textContent = n;
+    naming = null;
+    $('nmh').style.display = 'none';
+    $('again').disabled = $('home').disabled = $('rback').disabled = false;
+  }
+
+  // 【画面の切り替え】
+  function show(name) {
+    ['title', 'select', 'play', 'result'].forEach(id => $(id).classList.toggle('on', id === name));
+    state = name;
+    if (name === 'title') renderToday();
+    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+  }
+
+  // 【キー入力の振り分け】画面ごとにキーの意味が変わる（仕様書 4章）
+  addEventListener('keydown', e => {
+    if (e.repeat) return;                                 // 押しっぱなしは無視
+    const c = e.code, num = /^Digit([1-9])$/.exec(c);
+    if (state === 'title') {
+      if (c === 'Enter') { e.preventDefault(); show('select'); }
+    } else if (state === 'select') {
+      if (c === 'ArrowRight' || c === 'ArrowDown') pick((sel + 1) % SONGS.length);
+      else if (c === 'ArrowLeft' || c === 'ArrowUp') pick((sel + SONGS.length - 1) % SONGS.length);
+      else if (c === 'Enter') { e.preventDefault(); Game.start(sel); }
+      else if (num && +num[1] <= SONGS.length) Game.start(+num[1] - 1);
+      else if (c === 'Escape') show('title');
+    } else if (state === 'play') {
+      if (c === 'Escape') { Game.stop(); show('select'); }
+      else Game.key(c);
+    } else if (state === 'result' && !naming) {
+      if (c === 'Enter') { e.preventDefault(); Game.start(last); }
+      else if (c === 'Escape') show('select');
+    } else if (state === 'result' && naming) {
+      $('nm').focus();                                    // 入力欄から外れていたら、戻す
+    }
+  });
+
+  // 【ボタン】
+  $('go').onclick = () => show('select');
+  $('again').onclick = () => { if (!naming) Game.start(last); };
+  $('home').onclick = () => { if (!naming) show('select'); };
+  $('sback').onclick = () => show('title');
+  $('rback').onclick = () => { if (!naming) show('title'); };
+  $('rst').onclick = () => { if (confirm('ランキングを全部消します。よろしいですか？')) { Ranking.reset(); renderToday(); } };
+  Game.onFinish = showResult;
+
+  // 【はじめに1回だけ】拡大縮小、背景の演出、キャラ、曲カード、本日のトップ
+  addEventListener('resize', fit); fit();
+  for (let i = 0; i < 20; i++) {                          // 白いキラキラ
+    const d = document.createElement('div'); d.className = 'spk';
+    d.style.cssText = 'left:' + (i * 41 % W) + 'px;animation-duration:' + (8 + i % 5 * 3) + 's;animation-delay:-' + (i * 1.7) + 's';
+    $('stage').prepend(d);
+  }
+  const fl = $('fl'), FC = ['#ff9ccf', '#c9a8ff', '#9fd8ff', '#fff'], FG = ['♥', '♥', '★'];
+  for (let i = 0; i < 16; i++) {                          // ハートと星
+    const e = document.createElement('i'); e.textContent = FG[i % 3];
+    e.style.cssText = 'left:' + (i * 67 % 1040) + 'px;font-size:' + (14 + i % 4 * 8) + 'px;color:' + FC[i % 4] + ';animation-duration:' + (10 + i % 5 * 3) + 's;animation-delay:-' + (i * 1.3) + 's';
+    fl.appendChild(e);
+  }
+  document.querySelectorAll('[data-ch]').forEach(el => el.insertAdjacentHTML('afterbegin', charaHTML(+el.dataset.ch, false)));
+  buildCards();
+  show('title');
+  return { show };
+})();
+</script>
+</body></html>
