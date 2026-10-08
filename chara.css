@@ -1,0 +1,57 @@
+/* ============================================================
+   chara.css（松井）　キャラ（ウイルス3体）の見た目。全画面で共通
+   ------------------------------------------------------------
+   ・タイトル、セレクト、プレイ、リザルトの4画面で、同じキャラを使う（仕様書 6章）。
+   ・HTMLの形（3種類とも、この形をコピーして使う）：
+       ランサムちゃん：<div class="ch"><i class="stars"></i><div class="fc c0"><i class="lk"></i><i class="e"></i><i class="e r"></i><i class="bl"></i><i class="bl r"></i><i class="m"></i></div></div>
+       フィッシング　：<div class="ch"><div class="fc c1"><i class="hk"></i><i class="cr"></i><i class="br"></i><i class="e"></i><i class="e r"></i><i class="bl"></i><i class="bl r"></i><i class="m"></i></div></div>
+       DDoS　　　　　：<div class="ch"><div class="fc c2"><i class="an"></i><i class="an r"></i><i class="xx">&gt;_&lt;</i><i class="bl"></i><i class="bl r"></i></div></div>
+       ※ フィッシングは class="fc c1 santa" にすると、サンタの帽子になる。
+   ・大きさは --s（倍率）で変える。.ch は 130×130 の箱で、その中心に顔が来る。
+   ・※ キャラの部品のクラス名（.e .bl .m .lk .cr .br .hk .an .xx）は、他の場所では使わない（見た目が混ざる）。
+   ============================================================ */
+
+/* キャラ1体の箱（130×130）。中心に顔を置き、上下にゆらゆら動く（bob）。--s で大きさを変える */
+.ch{--s:1;position:relative;width:130px;height:130px;display:grid;place-items:center;scale:var(--s);animation:bob 2.4s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-8px)}}
+
+/* 小さく並べるとき用の枠（セレクト画面のカード、認定証の飾り）。--w が枠の大きさ。中の .ch を枠の中心に置く */
+.slot{--w:76px;position:relative;flex:none;width:var(--w);height:var(--w)}
+.slot .ch{position:absolute;left:50%;top:50%;margin:-65px 0 0 -65px}
+
+/* 顔の共通部分（丸・白い縁・光）。色は .c0 .c1 .c2 の --c1 --c2 で変える。中の i 要素が目・ほほ・口になる */
+.fc{position:relative;width:100px;height:100px;border-radius:50%;border:4px solid #fff;background:radial-gradient(circle at 38% 30%,var(--c1),var(--c2));box-shadow:0 0 18px var(--c2)}
+.fc i{position:absolute;display:block;font-style:normal}
+.fc .e{top:36px;left:20px;width:22px;height:22px;border-radius:50%;border:2px solid #fff;background:radial-gradient(circle at 36% 30%,#fff 0 16%,transparent 18%),#3b2455}
+.fc .e.r{left:auto;right:20px}
+.fc .bl{top:60px;left:7px;width:16px;height:9px;border-radius:50%;background:rgba(255,110,160,.55)}
+.fc .bl.r{left:auto;right:7px}
+.fc .m{left:50%;top:64px;width:12px;height:6px;margin-left:-6px;border-bottom:3px solid #3b2455;border-radius:0 0 12px 12px}
+.c0{--c1:#ffa3d3;--c2:#ff6fb5}.c1{--c1:#b6f5dc;--c2:#6fdcb4}.c2{--c1:#fff09a;--c2:#ffd23f}
+
+/* ランサムちゃん：後ろのトゲ（星形）と、頭の上の鍵 */
+.stars{position:absolute;left:50%;top:50%;width:130px;height:130px;margin:-65px 0 0 -65px;background:#ff5fb0;animation:spin 14s linear infinite;
+  clip-path:polygon(100.0% 50.0%,84.8% 59.3%,93.3% 75.0%,75.5% 75.5%,75.0% 93.3%,59.3% 84.8%,50.0% 100.0%,40.7% 84.8%,25.0% 93.3%,24.5% 75.5%,6.7% 75.0%,15.2% 59.3%,0.0% 50.0%,15.2% 40.7%,6.7% 25.0%,24.5% 24.5%,25.0% 6.7%,40.7% 15.2%,50.0% 0.0%,59.3% 15.2%,75.0% 6.7%,75.5% 24.5%,93.3% 25.0%,84.8% 40.7%)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.lk{left:50%;top:-4px;width:22px;height:16px;margin-left:-11px;background:#ffd84d;border-radius:4px}
+.lk::before{content:"";position:absolute;left:3px;top:-11px;width:10px;height:11px;border:3px solid #ffd84d;border-bottom:0;border-radius:8px 8px 0 0}
+
+/* フィッシング：帽子（.cr 上の部分、.br つば）と、釣り針（.hk） */
+.cr{left:50%;top:-34px;width:50px;height:30px;margin-left:-25px;background:#2f8b80;border-radius:4px 4px 0 0}
+.cr::after{content:"";position:absolute;left:0;right:0;bottom:5px;height:7px;background:#ff9ccf}
+.br{left:50%;top:-8px;width:84px;height:11px;margin-left:-42px;background:#2f8b80;border-radius:3px}
+.hk{left:50%;top:-30px;margin-left:24px;width:26px;height:48px;border:3px solid #777c8a;border-left:0;border-radius:0 24px 24px 0}
+
+/* フィッシングの季節の帽子：.fc に santa を足すと、帽子がサンタの帽子になる（ジングルベルのカードと、ジングルベルのプレイ中に使う） */
+.santa .br{top:-2px;box-shadow:0 2px 3px rgba(150,40,80,.25);width:88px;height:14px;margin-left:-44px;background:#fff;border-radius:8px}
+.santa .cr{top:-36px;width:56px;height:38px;margin-left:-30px;background:linear-gradient(#ff6f8e,#e8335a);border-radius:0;clip-path:polygon(0 100%,100% 100%,75% 0)}
+.santa .cr::after{display:none}
+.santa .br::after{content:"";position:absolute;left:49px;top:-41px;width:14px;height:14px;border-radius:50%;background:#fff}
+
+/* DDoS：少し小さい顔、触角（.an）、＞_＜の顔（.xx） */
+.c2.fc{width:84px;height:84px}
+.an{top:-22px;left:20px;width:2px;height:24px;background:#ff8fc7;transform-origin:bottom;transform:rotate(-18deg)}
+.an::before{content:"";position:absolute;left:-3px;top:-5px;width:8px;height:8px;border-radius:50%;background:#ff8fc7}
+.an.r{left:auto;right:20px;transform:rotate(18deg)}
+.xx{left:0;right:0;top:22px;text-align:center;font-size:24px;font-weight:900;color:#5a3a22}
+.c2.fc .bl{top:46px}

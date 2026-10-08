@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<!--
+  ============================================================
+  ゆめかわ★ウイルス・ぽっぷ　画面モックアップ（動かない見本）
+  ------------------------------------------------------------
+  ・4つの画面（タイトル／セレクト／プレイ／リザルト）の骨組み。表示するのは1つだけ（class="on" の画面）。
+  ・画面の id は仕様書 10.3 のとおり。担当ごとのファイルは仕様書 2.2 を参照。
+  ・左上の【仮】ボタンで、画面を見比べられる（本番では screens.js が画面を切り替える）。
+  ・プレイ画面の中身は見本（固定の絵）。本番では中山さんの view.js / game.js が作る。
+  ・キャラ（ウイルス3体）は全画面で同じ形。HTMLの形と見た目は chara.css を参照。
+  ============================================================
+-->
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ゆめかわ★ウイルス・ぽっぷ（モックアップ）</title>
+<link rel="stylesheet" href="chara.css">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="result.css">
+</head><body>
+
+<!-- 【仮】モックアップ確認用の切り替えボタン（本番では削除） -->
+<div id="mockbar">
+ <button data-go="title">タイトル</button><button data-go="select">セレクト</button><button data-go="play">プレイ</button><button data-go="result">リザルト</button>
+</div>
+
+<!-- #app（外枠）の中に #stage（舞台 1067×600）があり、その中に4つの画面が重なっている -->
+<div id="app"><div id="stage">
+
+<!-- 背景に浮かぶハート・星（全画面共通。個々の要素は screens.js が作る） -->
+<div id="fl"></div>
+
+<!-- タイトル画面：最初に表示される。Enter／あそぶボタンでセレクト画面へ -->
+<section id="title" class="scr on">
+ <div class="ttl"><span class="bk" aria-hidden="true"><small>ゆめかわ★</small>ウイルス<i>・</i>ぽっぷ</span><span class="fr"><small>ゆめかわ★</small>ウイルス<i>・</i>ぽっぷ</span></div>
+ <p class="sub2">〜パステルカラーのサイバー防衛戦！キー連打で大優勝★〜</p>
+ <div class="chars">
+  <div class="cc"><div class="ch"><i class="stars"></i><div class="fc c0"><i class="lk"></i><i class="e"></i><i class="e r"></i><i class="bl"></i><i class="bl r"></i><i class="m"></i></div></div>
+   <div class="nm">ぷにぷにランサムちゃん</div><div class="qt">「データを人質にとっちゃうぞ♡」</div></div>
+  <div class="cc"><div class="ch"><div class="fc c1"><i class="hk"></i><i class="cr"></i><i class="br"></i><i class="e"></i><i class="e r"></i><i class="bl"></i><i class="bl r"></i><i class="m"></i></div></div>
+   <div class="nm">てくてくフィッシング</div><div class="qt">「ニセのリンクで釣っちゃうよ〜」</div></div>
+  <div class="cc"><div class="ch"><div class="fc c2"><i class="an"></i><i class="an r"></i><i class="xx">&gt;_&lt;</i><i class="bl"></i><i class="bl r"></i></div></div>
+   <div class="nm">パニックDDoS</div><div class="qt">「みんなで押しかけるよ！」</div></div>
+ </div>
+ <button class="btn hot" id="go">あそぶ <small>[Enter]</small></button>
+ <!-- 本日のトップ：曲ごとに1行。記録がない曲は「--」（以下は見本の数字） -->
+ <div id="today">
+  <h3>★ 本日のトップ ★</h3>
+  <div class="tr"><span>きらきら星：<em>12,340点</em></span><span>ジングルベル：<em>8,760点</em></span><span>天国と地獄：<em>--</em></span></div>
+ </div>
+ <button class="sm" id="rst">ランキングをリセット（スタッフ用）</button>
+</section>
+
+<!-- 曲選択画面：曲カード（#cards）は SONGS から自動で作る予定。以下は見本 -->
+<section id="select" class="scr">
+ <button class="back" id="sback">← タイトルへ <small>[Esc]</small></button>
+ <h2 class="hd">きょくをえらんでね</h2>
+ <div id="cards">
+  <div class="card on" data-i="0">
+   <div class="scn"><b style="background:#3fbf7f">1</b>きらきら星</div>
+   <div class="slot"><div class="ch"><div class="fc c2"><i class="an"></i><i class="an r"></i><i class="xx">&gt;_&lt;</i><i class="bl"></i><i class="bl r"></i></div></div></div>
+   <div class="srow"><span class="sstar" style="color:#3fbf7f">★☆☆☆☆</span><span class="slb" style="background:#3fbf7f">やさしい</span></div>
+   <div class="sinfo">2レーン／約29秒</div>
+   <div class="skey">キー：F J</div>
+  </div>
+  <div class="card" data-i="1">
+   <div class="scn"><b style="background:#e0a000">2</b>ジングルベル</div>
+   <div class="slot"><div class="ch"><div class="fc c1 santa"><i class="hk"></i><i class="cr"></i><i class="br"></i><i class="e"></i><i class="e r"></i><i class="bl"></i><i class="bl r"></i><i class="m"></i></div></div></div>
+   <div class="srow"><span class="sstar" style="color:#e0a000">★★★☆☆</span><span class="slb" style="background:#e0a000">ふつう</span></div>
+   <div class="sinfo">4レーン／約40秒</div>
+   <div class="skey">キー：D F J K</div>
+  </div>
+  <div class="card" data-i="2">
+   <div class="scn"><b style="background:#ff3b6b">3</b>天国と地獄</div>
+   <div class="slot"><div class="ch"><i class="stars"></i><div class="fc c0"><i class="lk"></i><i class="e"></i><i class="e r"></i><i class="bl"></i><i class="bl r"></i><i class="m"></i></div></div></div>
+   <div class="srow"><span class="sstar" style="color:#ff3b6b">★★★★★</span><span class="slb" style="background:#ff3b6b">げきむず</span></div>
+   <div class="sinfo">4レーン／約42秒</div>
+   <div class="skey">キー：D F J K</div>
+  </div>
+ </div>
+ <div class="tip">上から落ちてくるウイルスが、下のラインに重なった瞬間にキーを叩いて撃退！<br>見逃すとサーバーHP（ハート）が減るよ。0になったらサーバーダウン…！</div>
+ <p class="hint">← → で選んで Enter ／ <kbd>1</kbd>〜<kbd>3</kbd>キーですぐスタート（Esc：タイトルへ）</p>
+</section>
+
+<!-- プレイ画面：レーンとウイルス（#lanes, #field）と、スコアなどの表示（#hud）。以下は見本（固定の絵） -->
+<div id="play" class="scr">
+ <div id="lanes">
+  <div class="jl"></div>
+  <div class="lane" style="left:313.5px"></div>
+  <div class="rc" style="left:328.5px;--c:#ff8fc7"></div>
+  <div class="kl" style="left:340.5px">D</div>
+  <div class="lane" style="left:423.5px"></div>
+  <div class="rc f" style="left:438.5px;--c:#4fd8ff"></div>
+  <div class="kl" style="left:450.5px">F</div>
+  <div class="lane" style="left:533.5px"></div>
+  <div class="rc" style="left:548.5px;--c:#9ff2d0"></div>
+  <div class="kl" style="left:560.5px">J</div>
+  <div class="lane" style="left:643.5px"></div>
+  <div class="rc" style="left:658.5px;--c:#ffe66b"></div>
+  <div class="kl" style="left:670.5px">K</div>
+ </div>
+ <div id="field">
+  <!-- ウイルス1体＝ .v（位置）の中に、タイトル画面と同じキャラ（.ch）を入れる。view.js の mkVirus が作る -->
+  <div class="v" style="transform:translate(368.5px,150px)"><div class="ch"><i class="stars"></i><div class="fc c0"><i class="lk"></i><i class="e"></i><i class="e r"></i><i class="bl"></i><i class="bl r"></i><i class="m"></i></div></div></div>
+  <div class="v" style="transform:translate(478.5px,330px)"><div class="ch"><div class="fc c1"><i class="hk"></i><i class="cr"></i><i class="br"></i><i class="e"></i><i class="e r"></i><i class="bl"></i><i class="bl r"></i><i class="m"></i></div></div></div>
+  <div class="v" style="transform:translate(588.5px,90px)"><div class="ch"><div class="fc c2"><i class="an"></i><i class="an r"></i><i class="xx">&gt;_&lt;</i><i class="bl"></i><i class="bl r"></i></div></div></div>
+  <div class="v" style="transform:translate(698.5px,250px)"><div class="ch"><i class="stars"></i><div class="fc c0"><i class="lk"></i><i class="e"></i><i class="e r"></i><i class="bl"></i><i class="bl r"></i><i class="m"></i></div></div></div>
+  <div class="v" style="transform:translate(368.5px,440px)"><div class="ch"><div class="fc c1"><i class="hk"></i><i class="cr"></i><i class="br"></i><i class="e"></i><i class="e r"></i><i class="bl"></i><i class="bl r"></i><i class="m"></i></div></div></div>
+ </div>
+ <div id="hud">
+  <div class="hp1" id="hl">
+   <div id="sn">天国と地獄</div>
+   <div class="lb">SCORE</div><div id="sc">12,340</div>
+   <div id="cb">12 COMBO</div>
+  </div>
+  <div class="hp1" id="hr">
+   <div id="hpl">サーバーHP</div>
+   <div id="hp"><i>♥</i><i>♥</i><i>♥</i><i>♥</i><i>♥</i><i>♥</i><i>♥</i><i class="off">♥</i><i class="off">♥</i><i class="off">♥</i></div>
+   <div id="tm">のこり 0:22</div>
+   <div id="bar"><i id="bi" style="width:45%"></i></div>
+  </div>
+  <div id="jd" style="opacity:1;color:#ff4fa3">大優勝！</div>
+  <div id="rd"></div>
+  <div class="esc">Esc：やめる</div>
+ </div>
+</div>
+
+<!-- リザルト画面：左に認定証（.cert）と豆知識（#tip）、右にランキング（#rl）。見た目は result.css -->
+<section id="result" class="scr">
+ <button class="back" id="rback">← タイトルへ</button>
+ <div class="rleft">
+  <div class="cert"><div class="in">
+   <h2>ゆめかわサイバーアナリスト認定証</h2>
+   <p id="rn">天国と地獄</p>
+   <div class="rank" id="rk">ランク S</div>
+   <p id="rcm">超大優勝★</p>
+   <p id="rt">防衛率 98%</p>
+   <p id="rs">スコア 12,340 点</p>
+   <p id="rm">最大コンボ 41</p>
+   <div class="ft">
+    <div class="deco"><div class="slot"><div class="ch"><i class="stars"></i><div class="fc c0"><i class="lk"></i><i class="e"></i><i class="e r"></i><i class="bl"></i><i class="bl r"></i><i class="m"></i></div></div></div><div class="slot"><div class="ch"><div class="fc c1"><i class="hk"></i><i class="cr"></i><i class="br"></i><i class="e"></i><i class="e r"></i><i class="bl"></i><i class="bl r"></i><i class="m"></i></div></div></div><div class="slot"><div class="ch"><div class="fc c2"><i class="an"></i><i class="an r"></i><i class="xx">&gt;_&lt;</i><i class="bl"></i><i class="bl r"></i></div></div></div></div>
+    <div class="stamp">認定</div>
+   </div>
+   <p id="rday">2026年10月8日　学園祭サイバー防衛本部</p>
+  </div></div>
+  <!-- 【できれば】豆知識：tips.js の TIPS から1つを選んで表示する（仕様書 3.5、8.4） -->
+  <div id="tip"><h3>💡 セキュリティ豆知識</h3><p id="tipt">パスワードは、サイトごとに別のものにしよう。1つもれても、ほかのサイトは守れるよ。</p></div>
+ </div>
+ <div class="rside">
+  <h2 id="rh">防衛成功！</h2>
+  <div class="rlbox">
+   <h3>この曲のランキング</h3>
+   <ol id="rl">
+    <li><b>1</b><span class="rnm">ぽっぷ</span><span>12,880点</span><span>99%</span></li>
+    <li><b>2</b><span class="rnm">ゆめかわ</span><span>12,500点</span><span>98%</span></li>
+    <li class="me"><b>3</b><span class="rnm"><input id="nm" maxlength="6" placeholder="なまえ" value="みゆ"></span><span>12,340点</span><span>98%</span></li>
+    <li><b>4</b><span class="rnm">ななし</span><span>11,020点</span><span>95%</span></li>
+    <li><b>5</b><span class="rnm">みく</span><span>9,870点</span><span>90%</span></li>
+    <li><b>6</b><span class="rnm">ウイルス</span><span>8,120点</span><span>84%</span></li>
+    <li><b>7</b><span class="rnm">ななし</span><span>7,400点</span><span>80%</span></li>
+    <li><b>8</b><span class="rnm">たろう</span><span>6,500点</span><span>72%</span></li>
+    <li><b>9</b><span class="rnm">ななし</span><span>5,210点</span><span>66%</span></li>
+    <li><b>10</b><span class="rnm">はな</span><span>4,030点</span><span>58%</span></li>
+   </ol>
+   <!-- 【できれば】名前の入力：10位以内に入ったときだけ表示する（仕様書 3.5） -->
+   <p id="nmh">ランクイン！ なまえを入れて Enter（6文字まで）<br>そのまま Enter で「ななし」になるよ</p>
+  </div>
+  <div class="row">
+   <button class="btn hot" id="again">もういちどあそぶ <small>[Enter]</small></button>
+   <button class="btn" id="home">きょくをえらぶ <small>[Esc]</small></button>
+  </div>
+  <p class="snap">スマホで撮って記念にしてね📷</p>
+ </div>
+</section>
+
+</div></div>
+
+<!-- JavaScript：読み込む順番は仕様書 2.2 のとおり（screens.js が最後） -->
+<script src="charts.js"></script>
+<script src="ranking.js"></script>
+<script src="tips.js"></script>
+<script src="audio.js"></script>
+<script src="view.js"></script>
+<script src="game.js"></script>
+<script src="screens.js"></script>
+</body></html>

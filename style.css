@@ -1,0 +1,142 @@
+/* ============================================================
+   style.css（松井）　全体・タイトル・曲選択・プレイ画面の見た目
+   ------------------------------------------------------------
+   ・リザルト画面（認定証）の見た目は result.css（岡野）に書く。
+   ・元になったのは index_3songs.html の <style>。
+   ============================================================ */
+/* フォント：丸ゴシックの「M PLUS Rounded 1c」を fonts/ に同梱（ネットなしでも表示できる。ライセンスは fonts/OFL.txt）。
+   太さは3種類：400（ふつう）、700（太字）、800（極太。900を指定したときもこれを使う） */
+@font-face{font-family:"Yumekawa";src:url(fonts/MPLUSRounded1c-Regular.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"Yumekawa";src:url(fonts/MPLUSRounded1c-Bold.woff2) format("woff2");font-weight:700}
+@font-face{font-family:"Yumekawa";src:url(fonts/MPLUSRounded1c-ExtraBold.woff2) format("woff2");font-weight:800 900}
+/* CSS変数：よく使う色を名前で登録（--pk=ピンク、--bl=水色、--ink=文字色、--hy=判定ラインの高さ） */
+:root{--pk:#ff8fc7;--bl:#4fd8ff;--ink:#5a3a7a;--hy:500px}
+*{box-sizing:border-box}
+/* ページ全体：余白をなくし、画面いっぱいに。body は grid で中身を中央に置く */
+html,body{margin:0;height:100%;background:#2b1f4a;font-family:"Yumekawa","Hiragino Maru Gothic ProN","Yu Gothic UI",Meiryo,sans-serif;color:var(--ink)}
+body{display:grid;place-items:center}
+/* #app：ゲーム全体の外枠。大きさは JavaScript の fit() が、画面に合わせて設定する */
+#app{position:relative;overflow:hidden;border-radius:14px}
+/* #stage：ゲームの「舞台」。内部サイズは 1067×600（16:9）で作り、transform:scale() で画面に合わせて拡大縮小する。font-size は文字サイズの基準 */
+#stage{position:absolute;left:0;top:0;width:1067px;height:600px;transform-origin:0 0;font-size:18px;overflow:hidden;background:linear-gradient(rgba(120,160,255,.22) 1px,transparent 1px) 0 0/40px 40px,linear-gradient(90deg,rgba(120,160,255,.22) 1px,transparent 1px) 0 0/40px 40px,linear-gradient(180deg,#ffd1ec,#dccbff 50%,#bfe6ff)}
+/* --- ゲーム画面 --- */
+/* 背景のキラキラ（小さな白い点）。fall アニメーションで上から下へ流れ続ける */
+.spk{position:absolute;width:6px;height:6px;border-radius:50%;background:#fff;opacity:.7;animation:fall linear infinite}
+@keyframes fall{from{transform:translateY(-10px)}to{transform:translateY(610px)}}
+/* レーン（ウイルスが落ちる縦の帯）。水色の縦線で区切る */
+.lane{position:absolute;top:0;bottom:0;width:110px;background:rgba(255,255,255,.38);border:0 solid #6fd8ff;border-width:0 2px;box-shadow:0 0 10px rgba(111,216,255,.6)}
+/* 判定ライン（ピンクの横線）と、判定リング（レーンごとの色の輪）。押したとき .f が付くと、色で塗りつぶされて大きくなる */
+.jl{position:absolute;left:313px;width:441px;top:calc(var(--hy) - 3px);height:6px;border-radius:3px;background:#ff66b0;box-shadow:0 0 8px #ff66b0}
+.rc{position:absolute;top:calc(var(--hy) - 40px);left:15px;width:80px;height:80px;border-radius:50%;border:6px solid var(--c);background:transparent;box-shadow:0 0 8px var(--c)}
+.rc.f{background:var(--c);transform:scale(1.15)}
+/* 押すキーの名前（判定リングの下の白い札） */
+.kl{position:absolute;top:calc(var(--hy) + 52px);width:56px;height:36px;border-radius:12px;background:#fff;font-size:24px;font-weight:800;line-height:36px;text-align:center;color:#6a3fb0}
+.esc{position:absolute;left:20px;bottom:10px;font-size:14px;font-weight:700;color:#7a5aa8}
+/* HUD：左の札（曲名・スコア・コンボ）と、右の札（サーバーHP・のこり時間） */
+#hud{position:absolute;inset:0;pointer-events:none;font-weight:800}
+.hp1{position:absolute;padding:12px 18px;border-radius:22px;background:rgba(255,255,255,.75);text-align:center}
+#hl{left:16px;top:16px;width:215px}
+#hr{right:16px;top:16px;width:235px}
+#sn{font-size:16px;color:#8a5cf0}
+.lb{font-size:15px;color:#ff4fa3;margin-top:6px}
+#sc{font-size:34px;line-height:1.1;color:#3b2455}
+#cb{font-size:20px;color:#6a3fb0;margin-top:4px}
+#hpl{font-size:16px;color:#ff4fa3}
+#hp{display:grid;grid-template-columns:repeat(5,1fr);margin:4px 0;font-size:30px;line-height:1.15;color:#ff4fa3}
+#hp i{font-style:normal}
+#hp i.off{color:rgba(255,160,200,.35)}
+#tm{font-size:20px;color:#3b2455}
+#bar{height:12px;margin-top:6px;border-radius:6px;background:rgba(180,150,230,.3);overflow:hidden}
+#bar i{display:block;height:100%;width:0;border-radius:6px;background:#8a5cf0}
+/* 判定テキスト（大優勝！など）。普段は透明。.pop クラスが付くと pop アニメーションで上に浮かんで消える */
+#jd{position:absolute;left:0;right:0;top:250px;text-align:center;font-size:44px;opacity:0;text-shadow:3.0px 0.0px 0 #fff,2.9px 0.8px 0 #fff,2.6px 1.5px 0 #fff,2.1px 2.1px 0 #fff,1.5px 2.6px 0 #fff,0.8px 2.9px 0 #fff,0.0px 3.0px 0 #fff,-0.8px 2.9px 0 #fff,-1.5px 2.6px 0 #fff,-2.1px 2.1px 0 #fff,-2.6px 1.5px 0 #fff,-2.9px 0.8px 0 #fff,-3.0px 0.0px 0 #fff,-2.9px -0.8px 0 #fff,-2.6px -1.5px 0 #fff,-2.1px -2.1px 0 #fff,-1.5px -2.6px 0 #fff,-0.8px -2.9px 0 #fff,-0.0px -3.0px 0 #fff,0.8px -2.9px 0 #fff,1.5px -2.6px 0 #fff,2.1px -2.1px 0 #fff,2.6px -1.5px 0 #fff,2.9px -0.8px 0 #fff}
+#jd.pop{animation:pop .6s ease-out}
+@keyframes pop{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-24px)}}
+#rd{position:absolute;left:0;right:0;top:290px;text-align:center;font-size:30px;text-shadow:0 0 4px #fff,0 0 4px #fff}
+/* ヒット演出の粒。--dx / --dy（飛ぶ距離）を JavaScript から渡し、burst アニメーションで広がって消える */
+.p{position:absolute;width:10px;height:10px;border-radius:50%;background:var(--c);animation:burst .5s ease-out forwards}
+@keyframes burst{to{transform:translate(var(--dx),var(--dy)) scale(.2);opacity:0}}
+/* --- プレイ画面のウイルス --- */
+/* ウイルス1体分の入れ物。大きさ0の点にして、位置は transform:translate() で動かす（view.js の mkVirus が作る）。
+   中身はタイトル画面と同じキャラ（chara.css）。.ch（130×130）を点の中心に置き、--s で小さくする */
+.v{position:absolute;left:0;top:0;width:0;height:0;will-change:transform}
+.v .ch{position:absolute;left:-65px;top:-65px;--s:.62}
+/* --- 画面 --- */
+/* 画面（タイトル／リザルト）の共通スタイル。普段は display:none で隠し、.on が付いた画面だけ表示する（show() が切り替える） */
+.scr{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:11px;text-align:center;z-index:1}
+.scr.on{display:flex}
+h1{margin:0;font-size:47px;line-height:1.1;color:#fff;-webkit-text-stroke:3px var(--pk);paint-order:stroke fill;text-shadow:4px 4px 0 var(--bl)}
+p{margin:0}.sub{font-weight:700}
+.row{display:flex;gap:18px;align-items:stretch;justify-content:center}
+/* ボタンの見た目（ピンクのグラデーション）。.hot を付けるとオレンジ系になる */
+.btn{font:inherit;font-weight:800;color:#fff;border:3px solid #fff;border-radius:36px;padding:12px 22px;cursor:pointer;background:linear-gradient(135deg,var(--pk),#c7a6ff);box-shadow:0 4px 0 #c46fa3}
+.btn.hot{background:linear-gradient(135deg,#ff7aa8,#ff9d5c);box-shadow:0 4px 0 #c4577e}
+.btn small{display:block;font-weight:500;font-size:12px}
+.btn:hover,.btn:focus-visible{transform:translateY(-2px);outline:3px solid var(--bl)}
+.sm{font:inherit;font-size:11px;background:none;border:0;color:var(--ink);opacity:.6;cursor:pointer;text-decoration:underline}
+kbd{display:inline-block;min-width:28px;padding:1px 7px;border-radius:7px;background:#fff;border:2px solid var(--pk);font:inherit;font-weight:800}
+
+/* --- 画面の出し分け（プレイ画面も .scr の仲間にして、.on が付いた画面だけ表示する） --- */
+#play{display:none;background:none}
+#play.on{display:block}
+
+/* --- 曲選択画面（#select） --- */
+.hd{margin:0;font-size:40px;font-weight:900;color:#ff4fa3;text-shadow:5.0px 0.0px 0 #fff,5.0px 0.6px 0 #fff,4.9px 1.1px 0 #fff,4.7px 1.7px 0 #fff,4.5px 2.2px 0 #fff,4.2px 2.7px 0 #fff,3.9px 3.1px 0 #fff,3.5px 3.5px 0 #fff,3.1px 3.9px 0 #fff,2.7px 4.2px 0 #fff,2.2px 4.5px 0 #fff,1.7px 4.7px 0 #fff,1.1px 4.9px 0 #fff,0.6px 5.0px 0 #fff,0.0px 5.0px 0 #fff,-0.6px 5.0px 0 #fff,-1.1px 4.9px 0 #fff,-1.7px 4.7px 0 #fff,-2.2px 4.5px 0 #fff,-2.7px 4.2px 0 #fff,-3.1px 3.9px 0 #fff,-3.5px 3.5px 0 #fff,-3.9px 3.1px 0 #fff,-4.2px 2.7px 0 #fff,-4.5px 2.2px 0 #fff,-4.7px 1.7px 0 #fff,-4.9px 1.1px 0 #fff,-5.0px 0.6px 0 #fff,-5.0px 0.0px 0 #fff,-5.0px -0.6px 0 #fff,-4.9px -1.1px 0 #fff,-4.7px -1.7px 0 #fff,-4.5px -2.2px 0 #fff,-4.2px -2.7px 0 #fff,-3.9px -3.1px 0 #fff,-3.5px -3.5px 0 #fff,-3.1px -3.9px 0 #fff,-2.7px -4.2px 0 #fff,-2.2px -4.5px 0 #fff,-1.7px -4.7px 0 #fff,-1.1px -4.9px 0 #fff,-0.6px -5.0px 0 #fff,-0.0px -5.0px 0 #fff,0.6px -5.0px 0 #fff,1.1px -4.9px 0 #fff,1.7px -4.7px 0 #fff,2.2px -4.5px 0 #fff,2.7px -4.2px 0 #fff,3.1px -3.9px 0 #fff,3.5px -3.5px 0 #fff,3.9px -3.1px 0 #fff,4.2px -2.7px 0 #fff,4.5px -2.2px 0 #fff,4.7px -1.7px 0 #fff,4.9px -1.1px 0 #fff,5.0px -0.6px 0 #fff,0 0 14px #ff8fc7}
+
+/* --- タイトル画面の「本日のトップ」（#today）：曲ごとに1行 --- */
+#today{width:900px;padding:8px 24px 10px;border-radius:22px;background:rgba(255,255,255,.7);font-size:16px;font-weight:700;line-height:1.5;color:var(--ink)}
+#today h3{margin:0 0 2px;font-size:16px;color:#ff4fa3}
+#today .tr{display:flex;justify-content:center;gap:34px}
+#today .tr em{font-style:normal;font-weight:900}
+
+/* ここから下はタイトル画面専用のCSS。タイトル文字・キャラ3体・背景の格子など */
+/* --- タイトル画面（キャラ紹介デザイン） --- */
+#title{justify-content:center;gap:12px}
+#title #go{margin-top:6px;padding:12px 44px;font-size:22px}
+/* 背景に浮かぶハート・星の置き場。個々の要素は JavaScript が作り、rise アニメーションで上に昇る */
+#fl{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:0}
+#fl i{position:absolute;bottom:-30px;font-style:normal;opacity:.55;animation:rise linear infinite}
+@keyframes rise{to{transform:translateY(-660px) rotate(20deg)}}
+/* タイトル文字：同じ文字を2枚重ねている。.bk＝白い縁取り＋光（奥）、.fr＝虹色グラデーション（手前）。背景グラデーションを文字の形で切り抜く（background-clip:text） */
+.ttl{display:grid;justify-items:center;margin:8px 0 10px;font-size:56px;font-weight:900;line-height:1.2;white-space:nowrap}
+.ttl span{grid-area:1/1}
+.ttl small{font-size:.66em;margin-right:.08em}  /* 「ゆめかわ★」は枕詞なので小さく */
+.ttl i{font-style:normal;margin:0 -.16em}       /* 「・」の両側を詰めて、「ウイルス・ぽっぷ」をひとまとまりに */
+.ttl .bk{color:#fff;text-shadow:8.0px 0.0px 0 #fff,7.9px 0.9px 0 #fff,7.8px 1.8px 0 #fff,7.6px 2.6px 0 #fff,7.2px 3.5px 0 #fff,6.8px 4.3px 0 #fff,6.3px 5.0px 0 #fff,5.7px 5.7px 0 #fff,5.0px 6.3px 0 #fff,4.3px 6.8px 0 #fff,3.5px 7.2px 0 #fff,2.6px 7.6px 0 #fff,1.8px 7.8px 0 #fff,0.9px 7.9px 0 #fff,0.0px 8.0px 0 #fff,-0.9px 7.9px 0 #fff,-1.8px 7.8px 0 #fff,-2.6px 7.6px 0 #fff,-3.5px 7.2px 0 #fff,-4.3px 6.8px 0 #fff,-5.0px 6.3px 0 #fff,-5.7px 5.7px 0 #fff,-6.3px 5.0px 0 #fff,-6.8px 4.3px 0 #fff,-7.2px 3.5px 0 #fff,-7.6px 2.6px 0 #fff,-7.8px 1.8px 0 #fff,-7.9px 0.9px 0 #fff,-8.0px 0.0px 0 #fff,-7.9px -0.9px 0 #fff,-7.8px -1.8px 0 #fff,-7.6px -2.6px 0 #fff,-7.2px -3.5px 0 #fff,-6.8px -4.3px 0 #fff,-6.3px -5.0px 0 #fff,-5.7px -5.7px 0 #fff,-5.0px -6.3px 0 #fff,-4.3px -6.8px 0 #fff,-3.5px -7.2px 0 #fff,-2.6px -7.6px 0 #fff,-1.8px -7.8px 0 #fff,-0.9px -7.9px 0 #fff,-0.0px -8.0px 0 #fff,0.9px -7.9px 0 #fff,1.8px -7.8px 0 #fff,2.6px -7.6px 0 #fff,3.5px -7.2px 0 #fff,4.3px -6.8px 0 #fff,5.0px -6.3px 0 #fff,5.7px -5.7px 0 #fff,6.3px -5.0px 0 #fff,6.8px -4.3px 0 #fff,7.2px -3.5px 0 #fff,7.6px -2.6px 0 #fff,7.8px -1.8px 0 #fff,7.9px -0.9px 0 #fff,0 0 18px #ff8fc7,0 0 34px #ff8fc7}
+.ttl .fr{background:linear-gradient(90deg,#ff3fa0,#b84df0 50%,#2aa6f5);-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub2{font-size:21px;font-weight:800;text-shadow:0 0 6px #fff,0 0 6px #fff}
+.chars{display:flex;gap:60px;margin-top:14px}
+.cc{width:250px}
+.cc .ch{--s:.86;margin:0 auto -8px}  /* 題字・サブタイトルとぶつからないよう、少し小さく */
+.cc:nth-child(2) .ch{animation-delay:-.8s}.cc:nth-child(3) .ch{animation-delay:-1.6s}
+.nm{white-space:nowrap;margin-top:8px;font-size:24px;font-weight:800;text-shadow:0 0 6px #fff,0 0 6px #fff,0 0 6px #fff}
+.qt{font-size:15px;font-weight:700;color:#7a5aa8}
+
+/* --- セレクト画面の曲カード（クラス名は s で始める。.cr などはキャラの部品で使っていて、同じ名前だと見た目が混ざってしまう）
+   3枚を横に並べる。.on が付いたものが「選んでいる曲」（青い枠で強調）。カードの中は、上から 曲名 → キャラ → 星とラベル → レーン・長さ → キー --- */
+#select{gap:22px}
+/* --- タイトルへ戻るボタン（セレクト画面とリザルト画面の左上）。.back を付けたボタン --- */
+.back{position:absolute;left:16px;top:10px;font:inherit;font-size:14px;font-weight:700;color:var(--ink);padding:3px 14px;border:2px solid #cdb6ff;border-radius:16px;background:rgba(255,255,255,.8);cursor:pointer;z-index:2}
+.back:hover,.back:focus-visible{background:#fff;border-color:#6fb3ff;outline:none}
+.back small{font-size:11px;font-weight:500;opacity:.7}
+.back:disabled{opacity:.4;cursor:default}
+#cards{display:flex;gap:32px}
+.card{width:286px;padding:18px 20px 20px;display:flex;flex-direction:column;align-items:center;gap:8px;border:3px solid #cdb6ff;border-radius:24px;background:rgba(255,255,255,.72);cursor:pointer}
+.card.on{border-color:#6fb3ff;background:#fff;box-shadow:0 0 0 5px rgba(100,170,255,.45)}
+.card .slot{--w:100px;margin:12px 0 0}
+.card .ch{--s:.72}
+.scn{font-size:22px;font-weight:800;display:flex;align-items:center;gap:8px;white-space:nowrap}
+.scn b{display:grid;place-items:center;width:28px;height:28px;border-radius:50%;color:#fff;font-size:16px}
+.srow{display:flex;align-items:center;gap:10px}
+.sstar{font-size:20px;color:#f5a623}
+.slb{display:inline-block;white-space:nowrap;padding:1px 14px;border-radius:14px;color:#fff;font-size:15px;font-weight:800}
+.sinfo{font-size:15px;font-weight:700}
+.skey{margin-top:-4px;font-size:13px;font-weight:700;opacity:.7}
+.tip{width:800px;padding:12px 24px;border-radius:20px;background:rgba(255,255,255,.72);font-size:15px;font-weight:700;line-height:1.6}
+.hint{font-size:14px;font-weight:700;color:#7a5aa8}
+
+/* ============================================================
+   【仮】モックアップ確認用の切り替えボタン（本番では screens.js が画面を切り替えるので、削除する）
+   ============================================================ */
+#mockbar{position:fixed;right:8px;bottom:8px;z-index:99;display:flex;gap:6px}
+#mockbar button{font:inherit;font-size:12px;padding:4px 10px;border:2px solid #fff;border-radius:14px;background:rgba(43,31,74,.85);color:#fff;cursor:pointer}
