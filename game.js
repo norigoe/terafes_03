@@ -3,8 +3,9 @@
    ゲーム本体 Game（仕様書 5章、10.1、10.2）。
    ・外から呼べるのは Game.start(k) / Game.stop() / Game.key(code) と、終わったときに呼ぶ Game.onFinish だけ。
    ・ゲームの状態 S は、外から見えないように Game の中に閉じこめる。
-   ・いまできていること：譜面の作成（5.2）、プレイ画面の準備、キーとレーンの対応（4章）。
-     音（audio.js）と、ウイルスが落ちる動き・判定は、このあと足す。
+   ・時刻はすべて Sound.now()（Web Audio の時計）から計算する（仕様書 5.3、9章）。
+   ・中身：譜面の作成（5.2）、BGMと薄いメロディ（7章）、ウイルスの出現・落下・ミス（5.4）、
+     キーとレーンの対応（4章）、判定・スコア・コンボ・HP（5.3、5.5）、ゲームの終わり（5.6）、防衛率とランク（5.7）。
    ============================================================ */
 
 const Game = (() => {                                         // ★ ( ) => { … } を作ってすぐ ( ) で実行する形。中で作った変数は外から見えない
@@ -13,7 +14,15 @@ const Game = (() => {                                         // ★ ( ) => { �
   // 【音名の番号】ド＝0 から半音ずつ数えた番号（シャープ # は ＋1）
   const NOTE = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };  // ★ ド レ ミ ファ ソ ラ シ。ミ→ファ、シ→ド は半音なので 1 しか増えない
 
+  // 【判定の種類】タイミングのずれが小さい順に、文字・色・基本点（仕様書 5.3）
+  const JUDGE = [
+    { tx: '大優勝！', c: '#ff4fa3', pt: 300 },                // ★ 0：ずれ 0.06秒未満（ピンク）
+    { tx: '神！', c: '#3bb8ff', pt: 200 },                    // ★ 1：ずれ 0.12秒未満（水色）
+    { tx: '超かわよ！', c: '#9a6bff', pt: 100 },              // ★ 2：ずれ 0.2秒以内（紫）
+  ];
+
   let S = null;                                               // ★ いまのプレイの状態（スコア・HP・ノーツなど）。start で作る
+  let raf = 0;                                                // ★ 次に呼ばれる loop の予約番号（requestAnimationFrame が返す）。前のループを止めるのに使う
 
   // 【音名 → 音の番号（MIDI番号）】例：C4（真ん中のド）→ 60、A4（ラ）→ 69
   function midi(p) {
@@ -92,12 +101,119 @@ const Game = (() => {                                         // ★ ( ) => { �
     return keys[code] !== undefined ? keys[code] : -1;        // ★ あればそのレーン、なければ -1
   }
 
+  // 【毎フレームの処理】1秒に約60回、ブラウザが呼ぶ（requestAnimationFrame）。出現 → 移動・ミス → 時間 → 終わりの判定
+  function loop() {
+    if (!S || !S.run) return;                                 // ★ 止まっていたら何もしない（次も呼ばない＝ループが終わる）
+    const t = Sound.now() - S.t0;                             // ★ 曲の開始からの経過時間（秒）。Web Audio の時計で測る（仕様書 5.3）
+    const song = S.song;                                      // ★ 曲データ（何度も使うので短い名前に）
+
+    Sound.sched(S);                                           // ★ 0.3秒先までの BGM と薄いメロディを予約する（audio.js）
+
+    while (S.nxt < S.notes.length && S.notes[S.nxt].t - t < song.fall * 1.15) {   // ★ 【出現】次のノーツの到達まで「落下時間×1.15」を切ったら（仕様書 5.4）
+      const n = S.notes[S.nxt];                               // ★ 次のノーツ
+      n.el = View.mkVirus(n.ty, song.santa);                  // ★ ウイルスを作る（ジングルベルならフィッシングがサンタ）
+      S.live.push(n);                                         // ★ 画面にいるウイルスの一覧に足す
+      S.nxt++;                                                // ★ その次のノーツへ
+    }
+
+    S.live = S.live.filter(n => {                             // ★ 【移動・ミス】画面にいるウイルスを1つずつ見る。true を返したものだけ残る
+      if (n.h === 1) {                                        // ★ 撃退ずみなら（判定は⑥で足す）
+        n.el.remove();                                        // ★ 画面から消す
+        return false;                                         // ★ 一覧からも外す
+      }
+      if (t - n.t > 0.2) {                                    // ★ 到達から0.2秒過ぎても叩かれていなければ、ミス（仕様書 5.3）
+        n.h = -1;                                             // ★ 結果＝ミス
+        n.el.remove();                                        // ★ 画面から消す（仕様書 5.4）
+        miss();                                               // ★ HPを減らす
+        return false;                                         // ★ 一覧から外す
+      }
+      const y = View.HY - (n.t - t) / song.fall * (View.HY + 30);   // ★ 縦の位置＝500 −（到達時刻 − いま）÷ 落下時間 × 530（仕様書 5.4）
+      View.move(n.el, View.lx(song.lanes, n.l), y);           // ★ レーンの真ん中の x と、計算した y へ動かす
+      return true;                                            // ★ まだ画面に残す
+    });
+
+    View.setTime(Math.min(S.dur, S.lead + S.dur - t), (t - S.lead) / S.dur);   // ★ のこり時間（準備中は曲の長さのまま）と、進行バー
+    if (t > S.lead - 0.5) View.ready('');                     // ★ 最初のノーツの0.5秒前に「じゅんびしてね…」を消す（仕様書 3.4）
+
+    if (S.hp <= 0 || t > S.end) {                             // ★ 【終わり】HPが0、または終了時刻を過ぎた（仕様書 5.6）
+      finish();                                               // ★ 結果を計算して、screens.js に渡す
+      return;                                                 // ★ 次のフレームは呼ばない
+    }
+    raf = requestAnimationFrame(loop);                        // ★ 次の画面の書きかえのときに、もう一度 loop を呼んでもらう（予約番号を覚える）
+  }
+
+  // 【ミス】HPを1減らし、コンボを0に戻して、「ざんねん…」を出す（仕様書 5.3、5.5）。効果音はない（7章）
+  function miss() {
+    S.hp--;                                                   // ★ HP −1
+    S.combo = 0;                                              // ★ コンボは0に戻る
+    View.setHud(S);                                           // ★ ハートの表示を書きかえる
+    View.say('ざんねん…', '#8a7bb0');                         // ★ 判定表示（灰紫）
+  }
+
+  // 【叩いたとき】l＝叩いたレーン。いちばん近いウイルスを探して、判定・得点・音・演出（仕様書 5.3、5.5）
+  function press(l) {
+    const t = Sound.now() - S.t0;                             // ★ 叩いた時刻（曲の開始からの秒数）
+    View.flash(l);                                            // ★ リングを光らせる（空打ちでも光る）
+    let best = null;                                          // ★ いちばん近いノーツ（まだ見つかっていない）
+    let bestD = 0;                                            // ★ そのノーツとのずれ（秒）
+    S.live.forEach(n => {                                     // ★ 画面にいるウイルスを1つずつ見る
+      if (n.h === 0 && n.l === l) {                           // ★ まだ叩かれていなくて、同じレーンのもの
+        const d = Math.abs(n.t - t);                          // ★ 到達時刻とのずれ（絶対値＝プラスにした差）
+        if (d <= 0.2 && (best === null || d < bestD)) {       // ★ 0.2秒以内で、いままでの候補より近ければ
+          best = n;                                           // ★ 候補にする
+          bestD = d;                                          // ★ ずれも覚える
+        }
+      }
+    });
+    if (best === null) return;                                // ★ 0.2秒以内にいなければ、何も起きない（空打ちにペナルティなし）
+
+    best.h = 1;                                               // ★ 結果＝撃退（次の loop で画面から消える）
+    S.hit++;                                                  // ★ 撃退した数 +1
+    S.combo++;                                                // ★ コンボ +1
+    S.max = Math.max(S.max, S.combo);                         // ★ 最大コンボを更新
+    let j = 2;                                                // ★ 判定：まず「超かわよ！」として
+    if (bestD < 0.12) j = 1;                                  // ★ 0.12秒未満なら「神！」
+    if (bestD < 0.06) j = 0;                                  // ★ 0.06秒未満なら「大優勝！」
+    S.score += JUDGE[j].pt + Math.min(S.combo, 50) * 2;      // ★ スコア＝基本点 ＋ min(コンボ, 50) × 2（仕様書 5.5）
+    View.setHud(S);                                           // ★ スコア・コンボの表示を書きかえる
+    View.say(JUDGE[j].tx, JUDGE[j].c);                        // ★ 判定の文字を出す
+    Sound.hit(best.f, best.d * 60 / S.song.bpm);              // ★ そのノーツの音を大きく鳴らす（長さ＝拍 × 1拍の秒数。仕様書 7章）
+    View.burst(View.lx(S.song.lanes, l));                     // ★ リングの位置で粒を飛ばす（ヒット演出）
+  }
+
+  // 【ゲームの終わり】防衛率とランクを計算して、Game.onFinish に結果を渡す（仕様書 5.7、10.2）
+  function finish() {
+    S.run = false;                                            // ★ 止める
+    View.clear();                                             // ★ 残っているウイルスを消す
+    const total = S.notes.length;                             // ★ 全ノーツ数（HP0で途中で終わっても、分母は全部の数。5.7）
+    const rate = total > 0 ? Math.round(S.hit / total * 100) : 0;   // ★ 防衛率（%）＝ 撃退した数 ÷ 全ノーツ数 × 100 を四捨五入
+    let rank = 'C';                                           // ★ まず C として
+    let comment = 'まだまだかわいい';                         // ★ C のコメント
+    if (rate >= 70) { rank = 'B'; comment = '神！'; }         // ★ 70%以上なら B
+    if (rate >= 85) { rank = 'A'; comment = '大優勝！'; }     // ★ 85%以上なら A
+    if (rate >= 95) { rank = 'S'; comment = '超大優勝★'; }   // ★ 95%以上なら S
+    const result = {                                          // ★ screens.js に渡す結果（仕様書 10.2 の9項目）
+      k: S.k,                                                 // ★ 曲の番号
+      score: S.score,                                         // ★ スコア
+      hit: S.hit,                                             // ★ 撃退した数
+      total: total,                                           // ★ 全ノーツ数
+      max: S.max,                                             // ★ 最大コンボ
+      dead: S.hp <= 0,                                        // ★ HPが0で終わったか（true / false）
+      rate: rate,                                             // ★ 防衛率（%）
+      rank: rank,                                             // ★ ランク S / A / B / C
+      comment: comment,                                       // ★ ランクのコメント
+    };
+    if (Game.onFinish) Game.onFinish(result);                 // ★ screens.js が関数を入れていれば呼ぶ（リザルト画面へ）
+  }
+
   return {                                                    // ★ ここから下が、外から使える Game の中身（仕様書 10.1）
 
     onFinish: null,                                           // ★ ゲームが終わったときに呼ぶ関数。screens.js（松井さん）が中身を入れる
 
     // 【k番目の曲でプレイを始める】screens.js から呼ばれる
     start(k) {
+      cancelAnimationFrame(raf);                              // ★ 前のプレイのループが残っていたら、予約を取り消す（ループが2つ動かないように）
+      Sound.init();                                           // ★ 音の準備（最初の1回だけ道具箱を作る。仕様書 7章）
       const song = SONGS[k];                                  // ★ k番目の曲データ（charts.js）
       const ch = chart(song);                                 // ★ 譜面を作る
       S = {                                                   // ★ このプレイの状態を、新しく作る
@@ -112,7 +228,12 @@ const Game = (() => {                                         // ★ ( ) => { �
         combo: 0,                                             // ★ いまのコンボ
         max: 0,                                               // ★ 最大コンボ
         hit: 0,                                               // ★ 撃退した数
-        run: false,                                           // ★ ゲームが動いているか（音と動きを足したら true にする）
+        t0: Sound.now() + 0.3,                                // ★ 曲の開始時刻（いまから0.3秒後。音の予約が間に合うように）
+        step: 0,                                              // ★ 次に予約するドラムの番号（audio.js の sched が進める）
+        mel: 0,                                               // ★ 次に予約する薄いメロディの番号（audio.js の sched が進める）
+        nxt: 0,                                               // ★ 次に出現させるノーツの番号
+        live: [],                                             // ★ いま画面にいるウイルス（ノーツ）の一覧
+        run: true,                                            // ★ ゲームが動いているか
       };
       View.build(song);                                       // ★ レーン・リング・キー札を作る（view.js）
       View.setHud(S);                                         // ★ スコア 0・HP 10 を表示
@@ -121,20 +242,21 @@ const Game = (() => {                                         // ★ ( ) => { �
       if (typeof Screens !== 'undefined') {                   // ★ screens.js に Screens ができていれば（松井さんの実装がまだの間は、ここを飛ばす）
         Screens.show('play');                                 // ★ プレイ画面に切り替える（仕様書 10.1）
       }
-      console.log('譜面：', S.notes.length + '個', S.notes);  // ★【確認用・あとで消す】作った譜面をコンソールに出す
+      raf = requestAnimationFrame(loop);                      // ★ 毎フレームの処理を始める（予約番号を覚える）
     },
 
     // 【プレイを中断する】結果は出さない（仕様書 10.1）
     stop() {
+      cancelAnimationFrame(raf);                              // ★ 次の loop の予約を取り消す（すぐ止まる）
       if (S) S.run = false;                                   // ★ 動いていたら止める
       View.clear();                                           // ★ ウイルスを消す
     },
 
     // 【キー入力】screens.js から、プレイ中に押されたキーの名前（KeyF など）が渡される
     key(code) {
-      if (!S) return;                                         // ★ まだ start していなければ何もしない
+      if (!S || !S.run) return;                               // ★ プレイ中でなければ何もしない
       const l = laneOf(code, S.song.lanes);                   // ★ どのレーンのキーか
-      if (l >= 0) View.flash(l);                              // ★ レーンのキーなら、そのリングを光らせる（判定はこのあと足す）
+      if (l >= 0) press(l);                                   // ★ レーンのキーなら、叩いたときの処理へ
     },
   };
 })();                                                         // ★ ← この ( ) で、上の関数をすぐ実行している
