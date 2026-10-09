@@ -361,13 +361,7 @@ screens.js は、この結果を受け取って、認定証の文字を書き、
 
 ### 10.4 game.js・audio.js・view.js の内部（中山）
 
-3つのファイルの間の呼び出しは、中山さんが決めてよい（仕様書の外）。サンプルの次の関数を分ける案。
-
-| ファイル | 入る関数（`index_3songs.html` の関数名） |
-| --- | --- |
-| `game.js` | `parse`、`chart`、`start`、`loop`、`miss`、`press`、`laneOf`、状態 `S`、結果の計算（`finish` の前半） |
-| `audio.js` | `tone`、`kick`、`hiss`、`sched`、`BASS` |
-| `view.js` | `lx`、`mkVirus`、`buildLanes`、`setHud`、`say`、`burst` |
+3つのファイルの間の呼び出しは、中山さんが決めてよい（仕様書の外）。分け方は、見本 `sample/` の `game.js`・`audio.js`・`view.js` に合わせる。各ファイルに入る関数は、`ソース地図_sample.md` を参照する。
 
 ## 11. 要件との対応
 
