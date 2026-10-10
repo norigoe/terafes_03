@@ -2,8 +2,8 @@
    screens.js（松井）　画面の切り替え、キー入力の振り分け、曲カード、本日のトップ（仕様書 2.2）
    ------------------------------------------------------------
    ・いまできていること：画面の拡大縮小、背景の演出、画面の切り替え（Screens.show）、
-     画面ごとのキー入力の振り分け（仕様書 4章）、ボタン、曲カード（SONGS から作る）。
-   ・このあと足すもの：本日のトップ、ランキング、リザルトの表示。
+     画面ごとのキー入力の振り分け（仕様書 4章）、ボタン、曲カード（SONGS から作る）、本日のトップ、ランキングのリセット。
+   ・このあと足すもの：リザルトの表示（認定証・ランキング・名前の入力）。
    ・外から呼べるのは Screens.show(name) だけ（仕様書 10.1）。
    ============================================================ */
 
@@ -50,9 +50,25 @@ const Screens = (() => {                                      // ★ game.js と
   function show(name) {
     NAMES.forEach(id => $(id).classList.toggle('on', id === name));   // ★ 一致した画面だけ on、ほかは外す
     state = name;                                             // ★ キー入力の振り分けに使う
+    if (name === 'title') renderToday();                      // ★ タイトル画面を出すたびに、本日のトップを読み直す（仕様書 8.3）
     if (document.activeElement && document.activeElement.blur) {
       document.activeElement.blur();                          // ★ 押したボタンのフォーカスを外す（Enter でボタンが二重に押されるのを防ぐ）
     }
+  }
+
+  // 【本日のトップ】曲ごとに「曲名：スコア点」を横に並べる。今日の記録がない曲は「--」（仕様書 3.2、8.3）
+  function renderToday() {
+    const tr = document.querySelector('#today .tr');          // ★ 「★ 本日のトップ ★」の下の行
+    tr.innerHTML = '';                                        // ★ 前の表示（モックの見本の数字）を消す
+    SONGS.forEach((s, k) => {                                 // ★ 曲の数だけくり返す（k は曲の番号）
+      const e = Ranking.todayTop(k);                          // ★ その曲の、今日のいちばん高い記録（なければ null）
+      const span = document.createElement('span');            // ★ 1曲分の入れ物
+      const em = document.createElement('em');                // ★ 点数の部分（太字）
+      span.textContent = s.name + '：';                       // ★ textContent で入れる（HTMLとして解釈させない）
+      em.textContent = e ? e.s.toLocaleString() + '点' : '--';   // ★ 12340 → '12,340点'。記録がなければ '--'
+      span.appendChild(em);
+      tr.appendChild(span);
+    });
   }
 
   // 【曲を始める】曲の番号を覚えてから、game.js に渡す。プレイ画面への切り替えは game.js がする（仕様書 10.1）
@@ -140,6 +156,13 @@ const Screens = (() => {                                      // ★ game.js と
   $('again').onclick = () => start(last);                     // ★ リザルト：もういちどあそぶ
   $('home').onclick = () => show('select');                   // ★ リザルト：きょくをえらぶ
   $('rback').onclick = () => show('title');                   // ★ リザルト：← タイトルへ
+  $('rst').onclick = () => {                                  // ★ タイトル：ランキングをリセット（スタッフ用。仕様書 3.2）
+    if (confirm('ランキングを全部消します。よろしいですか？')) {   // ★ 確認ダイアログで「OK」を押したときだけ
+      Ranking.reset();                                        // ★ 全曲の記録を消す（ranking.js）
+      renderToday();                                          // ★ 本日のトップを「--」に戻す
+    }
+    $('rst').blur();                                          // ★ フォーカスを外す（このあと Enter を押したとき、もう一度押されないように）
+  };
 
   // ★ カードは #cards にまとめて登録する（あとでカードを SONGS から作り直しても、登録しなおさなくてよい）
   $('cards').addEventListener('click', e => {
