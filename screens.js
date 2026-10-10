@@ -2,8 +2,8 @@
    screens.js（松井）　画面の切り替え、キー入力の振り分け、曲カード、本日のトップ（仕様書 2.2）
    ------------------------------------------------------------
    ・いまできていること：画面の拡大縮小、背景の演出、画面の切り替え（Screens.show）、
-     画面ごとのキー入力の振り分け（仕様書 4章）、ボタン、曲カードの選択。
-   ・このあと足すもの：曲カードを SONGS から作る、本日のトップ、ランキング、リザルトの表示。
+     画面ごとのキー入力の振り分け（仕様書 4章）、ボタン、曲カード（SONGS から作る）。
+   ・このあと足すもの：本日のトップ、ランキング、リザルトの表示。
    ・外から呼べるのは Screens.show(name) だけ（仕様書 10.1）。
    ============================================================ */
 
@@ -59,6 +59,46 @@ const Screens = (() => {                                      // ★ game.js と
   function start(k) {
     last = k;                                                 // ★ リザルトの「もういちどあそぶ」用
     Game.start(k);                                            // ★ game.js が準備して、Screens.show('play') を呼ぶ
+  }
+
+  // 【キャラのHTML】ty＝種類（0：ランサム、1：フィッシング、2：DDoS）、santa＝true ならサンタの帽子（仕様書 6章）
+  //  ・形は chara.css の先頭に書いたもの。view.js の View.chara と同じ形だが、
+  //    仕様書 10.1 にない関数は他のファイルから呼ばないので、screens.js にも持つ。
+  function charaHTML(ty, santa) {
+    const html = [                                            // ★ 3種類のHTMLを配列に入れておき、ty 番目を取り出す
+      '<div class="ch"><i class="stars"></i><div class="fc c0"><i class="lk"></i><i class="e"></i><i class="e r"></i><i class="bl"></i><i class="bl r"></i><i class="m"></i></div></div>',   // ★ 0：ランサムちゃん
+      '<div class="ch"><div class="fc c1' + (santa ? ' santa' : '') + '"><i class="hk"></i><i class="cr"></i><i class="br"></i><i class="e"></i><i class="e r"></i><i class="bl"></i><i class="bl r"></i><i class="m"></i></div></div>',   // ★ 1：フィッシング（santa のときだけ class に santa を足す）
+      '<div class="ch"><div class="fc c2"><i class="an"></i><i class="an r"></i><i class="xx">&gt;_&lt;</i><i class="bl"></i><i class="bl r"></i></div></div>',   // ★ 2：DDoS
+    ];
+    return html[ty];                                          // ★ 選んだ1つを返す
+  }
+
+  // 【曲の長さ（秒）】拍の合計 × 1拍の秒数（カードの「約◯秒」用）
+  //  ・game.js の譜面の読み込みは外から呼ばないので、ここで拍だけ数える。
+  function songSec(s) {
+    let beats = 0;                                            // ★ 拍の合計
+    s.chart.trim().split(/\s+/).forEach(tk => {                // ★ 'G4+C4:2' のような1つずつ
+      beats += Number(tk.split(':')[1] || 1);                 // ★ ':' の後ろが拍の数（ないときは1拍）
+    });
+    return Math.round(beats * 60 / s.bpm);                    // ★ 1拍＝60÷BPM 秒
+  }
+
+  // 【曲カードを作る】SONGS の曲の数だけ作る（仕様書 3.3）
+  function buildCards() {
+    $('cards').innerHTML = SONGS.map((s, i) =>                // ★ 曲1つ（s）から、カード1枚のHTMLを作り、join('') で全部つなげて #cards に入れる
+      '<div class="card" data-i="' + i + '">' +
+        '<div class="scn"><b style="background:' + s.col + '">' + (i + 1) + '</b>' + s.name + '</div>' +                // ★ 番号と曲名
+        '<div class="slot">' + charaHTML(s.chara, s.santa) + '</div>' +                                                  // ★ キャラ
+        '<div class="srow"><span class="sstar" style="color:' + s.col + '">' + '★'.repeat(s.star) + '☆'.repeat(5 - s.star) + '</span>' +
+          '<span class="slb" style="background:' + s.col + '">' + s.label + '</span></div>' +                           // ★ 星と難易度ラベル
+        '<div class="sinfo">' + s.lanes + 'レーン／約' + songSec(s) + '秒</div>' +                                       // ★ レーン数と長さ
+        '<div class="skey">キー：' + (s.lanes === 2 ? 'F J' : 'D F J K') + '</div>' +                                    // ★ 使うキー
+      '</div>'
+    ).join('');
+    // ★ キー案内の数字も、曲の数に合わせる（曲を足したとき 1〜4 になる）
+    document.querySelector('#select .hint').innerHTML =
+      '← → で選んで Enter ／ <kbd>1</kbd>〜<kbd>' + SONGS.length + '</kbd>キーですぐスタート（Esc：タイトルへ）';
+    pick(0);                                                  // ★ はじめは1曲目を選択中にする
   }
 
   // 【曲カードを選ぶ】i 番目のカードだけ青い枠にする（仕様書 3.3）
@@ -118,7 +158,7 @@ const Screens = (() => {                                      // ★ game.js と
   };
 
   // 【はじめに1回だけ】
-  pick(0);
+  buildCards();
   show('title');
 
   return { show };                                            // ★ 外に出すのは show だけ（仕様書 10.1）
