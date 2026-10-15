@@ -2,8 +2,9 @@
    screens.js（松井）　画面の切り替え、キー入力の振り分け、曲カード、本日のトップ（仕様書 2.2）
    ------------------------------------------------------------
    ・いまできていること：画面の拡大縮小、背景の演出、画面の切り替え（Screens.show）、
-     画面ごとのキー入力の振り分け（仕様書 4章）、ボタン、曲カード（SONGS から作る）、本日のトップ、ランキングのリセット。
-   ・このあと足すもの：リザルトの表示（認定証・ランキング・名前の入力）。
+     画面ごとのキー入力の振り分け（仕様書 4章）、ボタン、曲カード（SONGS から作る）、本日のトップ、ランキングのリセット、
+     リザルト画面（認定証・ランキング・【できれば】名前の入力）。
+   ・このあと足すもの：【できれば】豆知識。
    ・外から呼べるのは Screens.show(name) だけ（仕様書 10.1）。
    ============================================================ */
 
@@ -45,6 +46,7 @@ const Screens = (() => {                                      // ★ game.js と
   let state = 'title';                                        // ★ いま表示している画面
   let sel = 0;                                                // ★ セレクト画面で選択中の曲の番号
   let last = 0;                                               // ★ 最後に遊んだ曲の番号（リザルトの「もういちどあそぶ」で使う）
+  let naming = null;                                          // ★ 【できれば】名前を入力中の記録。入力中でなければ null
 
   // 【画面を切り替える】name の画面だけに class="on" を付ける（表示する画面は常に1つ）
   function show(name) {
@@ -69,6 +71,95 @@ const Screens = (() => {                                      // ★ game.js と
       span.appendChild(em);
       tr.appendChild(span);
     });
+  }
+
+  // 【リザルト画面】ゲームの結果 r を受け取って、認定証とランキングを出す（仕様書 3.5、10.2）
+  //  r の中身：k（曲の番号）、score、hit、total、max（最大コンボ）、dead（HP0で終わったか）、rate（防衛率）、rank、comment
+  function showResult(r) {
+    last = r.k;                                               // ★ 「もういちどあそぶ」で同じ曲を始めるために覚える
+    const d = new Date();                                     // ★ 今日の日付（認定証の下に出す）
+
+    // ★ 認定証の文字。textContent で入れる（HTMLとして解釈させない）
+    $('rn').textContent = SONGS[r.k].name;                                    // ★ 曲名
+    $('rk').textContent = 'ランク ' + r.rank;                                 // ★ 例：ランク S
+    $('rcm').textContent = r.comment;                                         // ★ 例：超大優勝★
+    $('rt').textContent = '防衛率 ' + r.rate + '%';                           // ★ 例：防衛率 98%
+    $('rs').textContent = 'スコア ' + r.score.toLocaleString() + ' 点';       // ★ 例：スコア 12,340 点（3けたごとにカンマ）
+    $('rm').textContent = '最大コンボ ' + r.max;                              // ★ 例：最大コンボ 41
+    $('rday').textContent = d.getFullYear() + '年' + (d.getMonth() + 1) + '月' + d.getDate() + '日　学園祭サイバー防衛本部';   // ★ getMonth は 0〜11 なので +1
+
+    $('rh').textContent = r.dead ? 'サーバーダウン…！' : '防衛成功！';       // ★ HPが0で終わったら「サーバーダウン…！」
+
+    const me = Ranking.add(r.k, r.score, r.rate);             // ★ 名前「ななし」で記録する（HP0で終わっても記録する。仕様書 8.2）
+    renderRanking(r.k, me);                                   // ★ この曲のランキングを出す
+
+    show('result');                                           // ★ リザルト画面に切り替える
+    if (naming) $('nm').focus();                              // ★ 10位以内なら、すぐ名前を打てるように入力欄を選ぶ（show の後でないと、フォーカスが外される）
+  }
+
+  // 【ランキング】k番目の曲の上位10件を、1行に「順位　名前　◯点　◯%」で並べる。今回の記録 me は強調する（仕様書 3.5、8.2）
+  function renderRanking(k, me) {
+    const ol = $('rl');                                       // ★ ランキングのリスト（<ol>）
+    ol.innerHTML = '';                                        // ★ 前の表示（モックの見本）を消す
+    naming = null;                                            // ★ まず「入力中ではない」にしておく（10位以内なら、下で入れる）
+    Ranking.top10(k).forEach((e, i) => {                      // ★ 1件ずつ（i は 0 から始まる）
+      const li = document.createElement('li');                // ★ 1行
+      const no = document.createElement('b');                 // ★ 順位
+      const nm = document.createElement('span');              // ★ 名前
+      const sc = document.createElement('span');              // ★ スコア
+      const rt = document.createElement('span');              // ★ 防衛率
+      no.textContent = i + 1;                                 // ★ 順位は 1 から
+      nm.className = 'rnm';                                   // ★ 名前の見た目（result.css の #rl .rnm）
+      if (me && e.at === me.at) {                             // ★ 今回の記録なら、名前の位置に入力欄を出す（【できれば】仕様書 3.5）
+        naming = e;                                           // ★ 名前を入力中の記録として覚える
+        const inp = document.createElement('input');          // ★ 入力欄
+        inp.id = 'nm';                                        // ★ id="nm"（見た目は result.css の #nm）
+        inp.maxLength = 6;                                    // ★ 6文字まで（仕様書 8.2）
+        inp.placeholder = 'なまえ';                           // ★ 何も入っていないときに薄く出る文字
+        inp.autocomplete = 'off';                             // ★ ブラウザが前に入れた名前を出さないように（展示では毎回ちがう人が遊ぶ）
+        inp.addEventListener('keydown', nameKey);             // ★ 入力欄でキーを押したとき
+        nm.appendChild(inp);
+      } else {
+        nm.textContent = e.n;                                 // ★ 名前は textContent で（HTMLとして解釈させない。仕様書 8.2）
+      }
+      sc.textContent = e.s.toLocaleString() + '点';           // ★ 例：12,340点
+      rt.textContent = e.r + '%';                             // ★ 例：98%
+      if (me && e.at === me.at) li.className = 'me';          // ★ 今回の記録なら強調（太字・濃いピンク・薄いピンクの帯）
+      li.append(no, nm, sc, rt);                              // ★ 4つを行に入れる
+      ol.appendChild(li);                                     // ★ 行をリストに足す
+    });
+    $('nmh').style.display = naming ? '' : 'none';            // ★ 名前の案内は、入力欄を出したときだけ見せる
+    lockButtons(!!naming);                                    // ★ 名前を決めるまで、ボタンは押せないようにする（!! で true / false にする）
+  }
+
+  // 【ボタンを押せなくする／戻す】lock が true なら押せない（仕様書 3.5、4章）
+  function lockButtons(lock) {
+    ['again', 'home', 'rback'].forEach(id => { $(id).disabled = lock; });   // ★ disabled＝押せない状態
+  }
+
+  // 【名前の入力欄のキー】（仕様書 4章）
+  function nameKey(e) {
+    e.stopPropagation();                                      // ★ 入力中のキーは、ゲームの操作（下の keydown）に渡さない。D F J K や数字は文字として入るだけ
+    if (e.key === 'Enter' && !e.isComposing && e.keyCode !== 229) {   // ★ Enter。ただし日本語入力の変換を決める Enter は除く
+      e.preventDefault();
+      decide(e.target.value);                                 // ★ 入れた名前で決める（空なら ranking.js が「ななし」にする）
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      decide('');                                             // ★ 入力をやめて「ななし」で決める
+    }
+  }
+
+  // 【名前を決める】ranking.js に書き込み、入力欄を文字に戻す（仕様書 3.5、8.2）
+  function decide(v) {
+    Ranking.setName(last, naming.at, v);                      // ★ 名前を記録に書き込む（6文字まで・空白を取る・空なら「ななし」は ranking.js がする）
+    const saved = Ranking.top10(last).find(x => x.at === naming.at);   // ★ 書き込んだ記録を読み直す
+    const inp = $('nm');                                      // ★ 入力欄
+    const span = inp.parentNode;                              // ★ 入力欄が入っている名前の場所
+    inp.blur();                                               // ★ フォーカスを外す
+    span.textContent = saved ? saved.n : '';                  // ★ 入力欄を、決めた名前の文字に置きかえる（textContent なので安全）
+    naming = null;                                            // ★ 入力中ではなくなった
+    $('nmh').style.display = 'none';                          // ★ 案内を消す
+    lockButtons(false);                                       // ★ ボタンを押せるように戻す
   }
 
   // 【曲を始める】曲の番号を覚えてから、game.js に渡す。プレイ画面への切り替えは game.js がする（仕様書 10.1）
@@ -144,6 +235,9 @@ const Screens = (() => {                                      // ★ game.js と
       if (c === 'Escape') { Game.stop(); show('select'); }    // ★ 中断（結果は残らない。仕様書 3.1）
       else Game.key(c);                                       // ★ それ以外のキーは game.js に渡す（レーンのキーかどうかは game.js が決める）
 
+    } else if (state === 'result' && naming) {
+      $('nm').focus();                                        // ★ 名前の入力中に、入力欄の外を押していたら、入力欄に戻す
+
     } else if (state === 'result') {
       if (c === 'Enter') { e.preventDefault(); start(last); } // ★ もういちどあそぶ（同じ曲）
       else if (c === 'Escape') show('select');                // ★ きょくをえらぶ
@@ -153,9 +247,9 @@ const Screens = (() => {                                      // ★ game.js と
   // 【ボタンとカードのクリック】
   $('go').onclick = () => show('select');                     // ★ タイトル：あそぶ
   $('sback').onclick = () => show('title');                   // ★ セレクト：← タイトルへ
-  $('again').onclick = () => start(last);                     // ★ リザルト：もういちどあそぶ
-  $('home').onclick = () => show('select');                   // ★ リザルト：きょくをえらぶ
-  $('rback').onclick = () => show('title');                   // ★ リザルト：← タイトルへ
+  $('again').onclick = () => { if (!naming) start(last); };   // ★ リザルト：もういちどあそぶ（名前を決めるまでは押せない）
+  $('home').onclick = () => { if (!naming) show('select'); }; // ★ リザルト：きょくをえらぶ（同じ）
+  $('rback').onclick = () => { if (!naming) show('title'); }; // ★ リザルト：← タイトルへ（同じ。仕様書 3.5）
   $('rst').onclick = () => {                                  // ★ タイトル：ランキングをリセット（スタッフ用。仕様書 3.2）
     if (confirm('ランキングを全部消します。よろしいですか？')) {   // ★ 確認ダイアログで「OK」を押したときだけ
       Ranking.reset();                                        // ★ 全曲の記録を消す（ranking.js）
@@ -174,11 +268,8 @@ const Screens = (() => {                                      // ★ game.js と
     if (card) pick(+card.dataset.i);                          // ★ マウスを乗せたカードを選択中にする
   });
 
-  // 【ゲームの終わり】いまはリザルト画面に切り替えるだけ（認定証・ランキングの表示は、このあと足す。仕様書 10.2）
-  Game.onFinish = result => {
-    last = result.k;
-    show('result');
-  };
+  // 【ゲームの終わり】game.js が結果を渡してくるので、リザルト画面を出す（仕様書 10.2）
+  Game.onFinish = showResult;
 
   // 【はじめに1回だけ】
   buildCards();
