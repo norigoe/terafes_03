@@ -2,8 +2,9 @@
    screens.js（松井）　画面の切り替え、キー入力の振り分け、曲カード、本日のトップ（仕様書 2.2）
    ------------------------------------------------------------
    ・いまできていること：画面の拡大縮小、背景の演出、画面の切り替え（Screens.show）、
-     画面ごとのキー入力の振り分け（仕様書 4章）、ボタン、曲カード（SONGS から作る）、本日のトップ、ランキングのリセット。
-   ・このあと足すもの：リザルトの表示（認定証・ランキング・名前の入力）。
+     画面ごとのキー入力の振り分け（仕様書 4章）、ボタン、曲カード（SONGS から作る）、本日のトップ、ランキングのリセット、
+     リザルト画面（認定証・ランキング）。
+   ・このあと足すもの：【できれば】名前の入力、豆知識。
    ・外から呼べるのは Screens.show(name) だけ（仕様書 10.1）。
    ============================================================ */
 
@@ -68,6 +69,51 @@ const Screens = (() => {                                      // ★ game.js と
       em.textContent = e ? e.s.toLocaleString() + '点' : '--';   // ★ 12340 → '12,340点'。記録がなければ '--'
       span.appendChild(em);
       tr.appendChild(span);
+    });
+  }
+
+  // 【リザルト画面】ゲームの結果 r を受け取って、認定証とランキングを出す（仕様書 3.5、10.2）
+  //  r の中身：k（曲の番号）、score、hit、total、max（最大コンボ）、dead（HP0で終わったか）、rate（防衛率）、rank、comment
+  function showResult(r) {
+    last = r.k;                                               // ★ 「もういちどあそぶ」で同じ曲を始めるために覚える
+    const d = new Date();                                     // ★ 今日の日付（認定証の下に出す）
+
+    // ★ 認定証の文字。textContent で入れる（HTMLとして解釈させない）
+    $('rn').textContent = SONGS[r.k].name;                                    // ★ 曲名
+    $('rk').textContent = 'ランク ' + r.rank;                                 // ★ 例：ランク S
+    $('rcm').textContent = r.comment;                                         // ★ 例：超大優勝★
+    $('rt').textContent = '防衛率 ' + r.rate + '%';                           // ★ 例：防衛率 98%
+    $('rs').textContent = 'スコア ' + r.score.toLocaleString() + ' 点';       // ★ 例：スコア 12,340 点（3けたごとにカンマ）
+    $('rm').textContent = '最大コンボ ' + r.max;                              // ★ 例：最大コンボ 41
+    $('rday').textContent = d.getFullYear() + '年' + (d.getMonth() + 1) + '月' + d.getDate() + '日　学園祭サイバー防衛本部';   // ★ getMonth は 0〜11 なので +1
+
+    $('rh').textContent = r.dead ? 'サーバーダウン…！' : '防衛成功！';       // ★ HPが0で終わったら「サーバーダウン…！」
+
+    const me = Ranking.add(r.k, r.score, r.rate);             // ★ 名前「ななし」で記録する（HP0で終わっても記録する。仕様書 8.2）
+    renderRanking(r.k, me);                                   // ★ この曲のランキングを出す
+    $('nmh').style.display = 'none';                          // ★ 名前の入力の案内は、名前の入力を作るまで出さない（【できれば】）
+
+    show('result');                                           // ★ リザルト画面に切り替える
+  }
+
+  // 【ランキング】k番目の曲の上位10件を、1行に「順位　名前　◯点　◯%」で並べる。今回の記録 me は強調する（仕様書 3.5、8.2）
+  function renderRanking(k, me) {
+    const ol = $('rl');                                       // ★ ランキングのリスト（<ol>）
+    ol.innerHTML = '';                                        // ★ 前の表示（モックの見本）を消す
+    Ranking.top10(k).forEach((e, i) => {                      // ★ 1件ずつ（i は 0 から始まる）
+      const li = document.createElement('li');                // ★ 1行
+      const no = document.createElement('b');                 // ★ 順位
+      const nm = document.createElement('span');              // ★ 名前
+      const sc = document.createElement('span');              // ★ スコア
+      const rt = document.createElement('span');              // ★ 防衛率
+      no.textContent = i + 1;                                 // ★ 順位は 1 から
+      nm.className = 'rnm';                                   // ★ 名前の見た目（result.css の #rl .rnm）
+      nm.textContent = e.n;                                   // ★ 名前は textContent で（HTMLとして解釈させない。仕様書 8.2）
+      sc.textContent = e.s.toLocaleString() + '点';           // ★ 例：12,340点
+      rt.textContent = e.r + '%';                             // ★ 例：98%
+      if (me && e.at === me.at) li.className = 'me';          // ★ 今回の記録なら強調（太字・濃いピンク・薄いピンクの帯）
+      li.append(no, nm, sc, rt);                              // ★ 4つを行に入れる
+      ol.appendChild(li);                                     // ★ 行をリストに足す
     });
   }
 
@@ -174,11 +220,8 @@ const Screens = (() => {                                      // ★ game.js と
     if (card) pick(+card.dataset.i);                          // ★ マウスを乗せたカードを選択中にする
   });
 
-  // 【ゲームの終わり】いまはリザルト画面に切り替えるだけ（認定証・ランキングの表示は、このあと足す。仕様書 10.2）
-  Game.onFinish = result => {
-    last = result.k;
-    show('result');
-  };
+  // 【ゲームの終わり】game.js が結果を渡してくるので、リザルト画面を出す（仕様書 10.2）
+  Game.onFinish = showResult;
 
   // 【はじめに1回だけ】
   buildCards();
