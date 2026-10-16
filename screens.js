@@ -243,6 +243,7 @@ const Screens = (() => {                                      // ★ game.js と
       else if (c === 'Escape') show('title');
 
     } else if (state === 'play') {
+      if (c === 'Space') e.preventDefault();                 // ★ Space で画面がスクロールしたり、選ばれたままのボタンが押されたりしないようにする（Space はこの下で Game.key に渡す）
       if (c === 'Escape') { Game.stop(); show('select'); }    // ★ 中断（結果は残らない。仕様書 3.1）
       else Game.key(c);                                       // ★ それ以外のキーは game.js に渡す（レーンのキーかどうかは game.js が決める）
 
