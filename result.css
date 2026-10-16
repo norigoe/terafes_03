@@ -110,38 +110,25 @@
 .cert .slot{--w:60px}
 .cert .ch{--s:.46}
 
-/* 認定スタンプ：シーリングスタンプ（ろうそくの封蝋）風。
-   ふちがぷるんと歪んだ蝋＋内側の円を真珠のつぶがぐるっと囲む */
+/* 認定スタンプ：ぎざぎざシール風（ふち＋星つき）。ポンッと押される */
 .stamp{
-  position:relative;display:grid;place-items:center;width:84px;height:84px;
-  /* 蝋がとろっと広がったような、ちょっと不ぞろいな丸 */
-  border-radius:52% 48% 50% 50% / 49% 53% 47% 51%;
-  background:
-    radial-gradient(circle at 32% 26%,#ff9cc3 0,#f0509a 34%,#cf2a78 66%,#9c1359 100%);
-  box-shadow:
-    0 5px 0 #8a104d,                       /* 蝋の厚み */
-    0 9px 14px rgba(120,10,70,.45),         /* 落ちる影 */
-    inset 0 3px 4px rgba(255,255,255,.45),  /* 上のつや */
-    inset 0 -4px 6px rgba(90,0,45,.45);     /* 下のくぼみ影 */
-  color:#ffeaf4;font-size:21px;font-weight:900;letter-spacing:-.02em;
-  /* 「認定」の文字は蝋に押しつけたような浮き彫り */
-  text-shadow:-1px -1px 0 rgba(95,0,48,.75),1px 1px 0 rgba(255,190,220,.7);
+  position:relative;display:grid;place-items:center;width:72px;height:72px;
+  border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,#fff7fb 0 45%,#ffe0f0 100%);
+  border:4px dotted #ff4fa3;
+  box-shadow:0 0 0 4px #fff,0 0 0 7px #ff8fc7,0 5px 0 7px #e2368a;
+  color:#e2368a;font-size:21px;font-weight:900;letter-spacing:-.02em;
+  text-shadow:2px 2px 0 #fff,-2px -2px 0 #fff,2px -2px 0 #fff,-2px 2px 0 #fff;
   transform:rotate(-12deg);
   animation:stampDon .55s .35s cubic-bezier(.3,1.8,.5,1) both;
 }
-/* 内側の円：くぼんだ面を、真珠（白いつぶ）がぐるっと囲む */
-.stamp::before{
-  content:"";position:absolute;inset:9px;border-radius:50%;
-  border:5px dotted #fffaf2;                 /* ← 真珠のつぶ。色を変えるとパールカラーも変えられる */
-  background:radial-gradient(circle at 60% 70%,rgba(255,255,255,.12),rgba(100,0,50,.28));
-  box-shadow:inset 0 2px 5px rgba(90,0,45,.55);
-  filter:drop-shadow(0 1px 1px rgba(90,0,45,.7)) drop-shadow(-1px -1px 0 rgba(255,255,255,.6));
-  pointer-events:none;
+.stamp::before{ /* 左上の小さな星 */
+  content:"★";position:absolute;top:-14px;left:-10px;font-size:20px;color:#ffd84d;
+  -webkit-text-stroke:2px #fff;paint-order:stroke fill;
 }
-/* 蝋のてかり（左上のハイライト） */
-.stamp::after{
-  content:"";position:absolute;top:7px;left:12px;width:20px;height:9px;border-radius:50%;
-  background:rgba(255,255,255,.55);filter:blur(2px);transform:rotate(-28deg);pointer-events:none;
+.stamp::after{ /* 右下のハート */
+  content:"♥";position:absolute;right:-12px;bottom:-8px;font-size:18px;color:#ff4fa3;
+  -webkit-text-stroke:2px #fff;paint-order:stroke fill;
 }
 @keyframes stampDon{
   0%{transform:rotate(-12deg) scale(2.6);opacity:0}
@@ -186,38 +173,16 @@
   padding:1px 8px;margin-bottom:3px;border-radius:999px;text-align:right;
   background:rgba(255,255,255,.55);
 }
-/* 順位：4位以下はふつうのまるいバッジ */
+/* 順位：まるいバッジ（1位ゴールド・2位シルバー・3位ブロンズ・4位以下ラベンダー） */
 #rl li b{
   justify-self:center;display:grid;place-items:center;
   width:1.6em;height:1.6em;line-height:1;border-radius:50%;
   color:#fff;background:#c9a8f5;font-size:14px;
   text-shadow:0 1px 0 rgba(0,0,0,.18);
 }
-/* 1〜3位：文字を大きくして、順位を王冠にする */
-#rl li:nth-child(-n+3){font-size:18px;font-weight:900;line-height:1.7;margin-bottom:4px}
-#rl li:nth-child(-n+3) b{
-  position:relative;isolation:isolate;
-  width:2.1em;height:1.7em;border-radius:0;background:none;box-shadow:none;
-  padding-top:.42em;font-size:16px;font-weight:900;color:#fff;
-}
-/* 王冠のかたち（5つのとんがり）。::after が影、::before が本体 */
-#rl li:nth-child(-n+3) b::before,
-#rl li:nth-child(-n+3) b::after{
-  content:"";position:absolute;inset:0;z-index:-1;
-  clip-path:polygon(0 100%,0 22%,24% 55%,50% 0,76% 55%,100% 22%,100% 100%);
-}
-#rl li:nth-child(-n+3) b::after{inset:3px 0 -3px 0}
-#rl li:nth-child(-n+3) b::before{
-  /* 下の帯（王冠のふち）だけ少し濃くする */
-  background:linear-gradient(transparent 76%,rgba(0,0,0,.16) 76%),var(--crown);
-}
-/* 色：1位ゴールド／2位シルバー／3位ブロンズ */
-#rl li:nth-child(1) b{--crown:linear-gradient(135deg,#fff08a,#ffc21a 55%,#f09a00);text-shadow:0 1px 0 #b87400,1px 0 0 #b87400,-1px 0 0 #b87400}
-#rl li:nth-child(1) b::after{background:#b87400}
-#rl li:nth-child(2) b{--crown:linear-gradient(135deg,#f4f8fc,#bcc9d8 55%,#98a8bb);text-shadow:0 1px 0 #66768a,1px 0 0 #66768a,-1px 0 0 #66768a}
-#rl li:nth-child(2) b::after{background:#66768a}
-#rl li:nth-child(3) b{--crown:linear-gradient(135deg,#ffd2b0,#f0985c 55%,#d97a3c);text-shadow:0 1px 0 #9a5222,1px 0 0 #9a5222,-1px 0 0 #9a5222}
-#rl li:nth-child(3) b::after{background:#9a5222}
+#rl li:nth-child(1) b{background:linear-gradient(135deg,#ffe36e,#ffb300);box-shadow:0 2px 0 #d98e00}
+#rl li:nth-child(2) b{background:linear-gradient(135deg,#e6edf5,#a9b6c6);box-shadow:0 2px 0 #7f8da0}
+#rl li:nth-child(3) b{background:linear-gradient(135deg,#ffc29a,#e98a52);box-shadow:0 2px 0 #b9622f}
 #rl .rnm{text-align:left;padding-left:6px}
 /* 今回の記録：ピンクのキャンディ風に強調 */
 #rl .me{
