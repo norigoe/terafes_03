@@ -228,7 +228,8 @@ const Game = (() => {                                         // ★ ( ) => { �
         combo: 0,                                             // ★ いまのコンボ
         max: 0,                                               // ★ 最大コンボ
         hit: 0,                                               // ★ 撃退した数
-        t0: Sound.now() + 0.3,                                // ★ 曲の開始時刻（いまから0.3秒後。音の予約が間に合うように）
+        t0: 0,                                                // ★ 曲の開始時刻。Space を押したときに決める（key を見る）
+        wait: true,                                           // ★ Space を待っている間は true（自分のタイミングでスタート）
         step: 0,                                              // ★ 次に予約するドラムの番号（audio.js の sched が進める）
         mel: 0,                                               // ★ 次に予約する薄いメロディの番号（audio.js の sched が進める）
         nxt: 0,                                               // ★ 次に出現させるノーツの番号
@@ -238,11 +239,10 @@ const Game = (() => {                                         // ★ ( ) => { �
       View.build(song);                                       // ★ レーン・リング・キー札を作る（view.js）
       View.setHud(S);                                         // ★ スコア 0・HP 10 を表示
       View.setTime(S.dur, 0);                                 // ★ のこり時間＝曲の長さ、進行バー 0%
-      View.ready('じゅんびしてね…');                          // ★ 開始表示（仕様書 3.4）
+      View.ready('スペースキーでスタート！');                  // ★ 開始表示。Space を押すまで待つ（ループはまだ始めない）
       if (typeof Screens !== 'undefined') {                   // ★ screens.js に Screens ができていれば（松井さんの実装がまだの間は、ここを飛ばす）
         Screens.show('play');                                 // ★ プレイ画面に切り替える（仕様書 10.1）
       }
-      raf = requestAnimationFrame(loop);                      // ★ 毎フレームの処理を始める（予約番号を覚える）
     },
 
     // 【プレイを中断する】結果は出さない（仕様書 10.1）
@@ -255,6 +255,15 @@ const Game = (() => {                                         // ★ ( ) => { �
     // 【キー入力】screens.js から、プレイ中に押されたキーの名前（KeyF など）が渡される
     key(code) {
       if (!S || !S.run) return;                               // ★ プレイ中でなければ何もしない
+      if (S.wait) {                                           // ★ 【開始前】Space を待っているとき
+        if (code === 'Space') {                               // ★ Space が押されたら
+          S.wait = false;                                     // ★ もう待たない
+          S.t0 = Sound.now() + 0.3;                           // ★ 曲の開始時刻（いまから0.3秒後。音の予約が間に合うように）
+          View.ready('じゅんびしてね…');                      // ★ 開始表示を切りかえる（仕様書 3.4）
+          raf = requestAnimationFrame(loop);                  // ★ 毎フレームの処理を始める（予約番号を覚える）
+        }
+        return;                                               // ★ 開始前は、レーンのキー（D F J K・数字）を押しても何も起きない
+      }
       const l = laneOf(code, S.song.lanes);                   // ★ どのレーンのキーか
       if (l >= 0) press(l);                                   // ★ レーンのキーなら、叩いたときの処理へ
     },
