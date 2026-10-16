@@ -6,7 +6,7 @@
    ・使える id / class：
        .cert（認定証の枠）、#rn（曲名）、#rk（ランク）、#rcm（ランクのコメント）、#rt（防衛率）、
        #rs（スコア）、#rm（最大コンボ）、.stamp（認定スタンプ）、.slot（キャラの飾りの枠）、#rday（日付）、
-       #rh（見出し：防衛成功／サーバーダウン）、#rl（ランキング）、#rl .me（今回の記録の強調）、#again、#home（ボタン）
+       #rh（見出し：防衛成功／サーバーダウン）、#rlh（ランキングの見出し行）、#rl（ランキング）、#rl .me（今回の記録の強調）、#again、#home（ボタン）
        【できれば】#nm（名前の入力欄）、#nmh（名前の案内）、#tip（豆知識の枠）、#tipt（豆知識の文）
    ・キャラの飾りは chara.css のキャラを、.slot（小さく並べる枠）に入れて使う。
    ・色の変数（--pk=ピンク、--bl=水色、--ink=文字色）と、.btn は style.css にある。
@@ -32,15 +32,16 @@
     linear-gradient(135deg,#ff6fb5 0%,#ffd84d 28%,#7be0b8 52%,#5ec8ff 76%,#c58bff 100%) border-box;
   box-shadow:0 0 0 4px #fff,0 10px 0 -2px #e9b9ff,0 14px 26px rgba(150,70,200,.32);
 }
-/* 外側の角デコ：左上のハート／右下の星（ふわふわ動く） */
+/* 外側のデコ：右上の角にハート／左がわに星（ふわふわ動く）。
+   ※左上は「タイトルへ」ボタンと重なるので避けている */
 .cert::before,.cert::after{
   position:absolute;z-index:2;pointer-events:none;
   font-weight:900;line-height:1;
   -webkit-text-stroke:3px #fff;paint-order:stroke fill;
   animation:certFloat 2.8s ease-in-out infinite;
 }
-.cert::before{content:"♥";top:-16px;left:-12px;font-size:36px;color:#ff4fa3;transform:rotate(-14deg)}
-.cert::after{content:"★";right:-14px;bottom:-16px;font-size:38px;color:#ffd84d;transform:rotate(12deg);animation-delay:-1.4s}
+.cert::before{content:"♥";top:-18px;right:-14px;font-size:36px;color:#ff4fa3;transform:rotate(14deg)}
+.cert::after{content:"★";left:-18px;bottom:92px;font-size:38px;color:#ffd84d;transform:rotate(-12deg);animation-delay:-1.4s}
 @keyframes certFloat{
   0%,100%{translate:0 0}
   50%{translate:0 -6px}
@@ -163,14 +164,29 @@
   box-shadow:0 0 0 3px #ffc4e3,0 8px 0 -1px #e9b9ff,0 12px 22px rgba(150,70,200,.22);
 }
 .rlbox h3{
-  margin:0 0 6px;text-align:center;font-size:17px;font-weight:900;color:#ff4fa3;
+  margin:0 0 4px;text-align:center;font-size:17px;font-weight:900;color:#ff4fa3;
 }
+
+/* ランキングの見出し行 #rlh（松井が index.html に追加：<span>順位</span><span>なまえ</span><span>スコア</span><span>防衛率</span>）
+   ・列幅は #rl li と同じ（2.4em 1fr 6.6em 3.4em）。em がずれないよう #rlh 自体を 15px（li と同じ）にして、
+     文字だけ span で 12px に小さくしている（名前の 15px より小さい）。
+   ・左右の padding(8px) も li と同じ。1行ぶん高さが増えるので、行間をつめて全体の高さを調整している。 */
+#rlh{
+  display:grid;grid-template-columns:2.4em 1fr 6.6em 3.4em;align-items:center;
+  margin:0 0 3px;padding:0 8px;border-radius:999px;
+  font-size:15px;line-height:1.4;
+  background:linear-gradient(90deg,#f1e6ff,#ffe6f4);
+}
+#rlh span{font-size:12px;font-weight:800;letter-spacing:.04em;color:#8a5cf0}
+#rlh span:nth-child(1){text-align:center}
+#rlh span:nth-child(2){text-align:left;padding-left:6px}
+#rlh span:nth-child(3),#rlh span:nth-child(4){text-align:right}
 
 /* ランキング：1行＝ 順位・名前・スコア・防衛率（列幅は元のまま） */
 #rl{margin:0;padding:0;list-style:none;font-size:15px;font-weight:700;line-height:1.55;color:#5b3a8c}
 #rl li{
   display:grid;grid-template-columns:2.4em 1fr 6.6em 3.4em;align-items:center;
-  padding:1px 8px;margin-bottom:3px;border-radius:999px;text-align:right;
+  padding:1px 8px;margin-bottom:2px;border-radius:999px;text-align:right;
   background:rgba(255,255,255,.55);
 }
 /* 順位：まるいバッジ（1位ゴールド・2位シルバー・3位ブロンズ・4位以下ラベンダー） */
