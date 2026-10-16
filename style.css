@@ -73,6 +73,8 @@ p{margin:0}.sub{font-weight:700}
 .btn.hot{background:linear-gradient(135deg,#ff7aa8,#ff9d5c);box-shadow:0 4px 0 #c4577e}
 .btn small{display:block;font-weight:500;font-size:12px}
 .btn:hover,.btn:focus-visible{transform:translateY(-2px);outline:3px solid var(--bl)}
+/* 押せないとき（名前の入力中など）：薄くして、マウスを乗せても浮き上がらない。カーソルは普通の矢印（← タイトルへ の .back:disabled と同じ考え方） */
+.btn:disabled,.btn:disabled:hover{opacity:.4;cursor:default;transform:none;outline:none}
 .sm{font:inherit;font-size:11px;background:none;border:0;color:var(--ink);opacity:.6;cursor:pointer;text-decoration:underline}
 kbd{display:inline-block;min-width:28px;padding:1px 7px;border-radius:7px;background:#fff;border:2px solid var(--pk);font:inherit;font-weight:800}
 
