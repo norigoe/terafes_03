@@ -44,7 +44,8 @@
 
 <!-- 曲選択画面：曲カード（#cards）は SONGS から自動で作る予定。以下は見本 -->
 <section id="select" class="scr">
- <button class="back" id="sback">← タイトルへ <small>[Esc]</small></button>
+ <!-- タイトルへ戻るボタン：おうちのマークだけの小さな丸いボタン（左上の隅）。aria-label は読み上げ用の名前（画面には出ない）。乗せたときのチップ（title）は、雰囲気に合わないので付けない -->
+ <button class="back" id="sback" aria-label="タイトルへ"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M12 3 2 11.5h3V21h5.5v-6h3v6H19v-9.5h3z" fill="currentColor"/></svg></button>
  <h2 class="hd">きょくをえらんでね</h2>
  <div id="cards">
   <div class="card on" data-i="0">
@@ -118,7 +119,8 @@
 
 <!-- リザルト画面：左に認定証（.cert）と豆知識（#tip）、右にランキング（#rl）。見た目は result.css -->
 <section id="result" class="scr">
- <button class="back" id="rback">← タイトルへ</button>
+ <!-- タイトルへ戻るボタン（セレクト画面と同じ、おうちのマーク） -->
+ <button class="back" id="rback" aria-label="タイトルへ"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M12 3 2 11.5h3V21h5.5v-6h3v6H19v-9.5h3z" fill="currentColor"/></svg></button>
  <div class="rleft">
   <div class="cert"><div class="in">
    <h2>ゆめかわサイバーアナリスト認定証</h2>
