@@ -30,23 +30,16 @@
 
 <!-- タイトル画面：最初に表示される。Enter／あそぶボタンでセレクト画面へ -->
 <section id="title" class="scr on">
- <div class="ttl"><span class="bk" aria-hidden="true"><small>ゆめかわ★</small>ウイルス<i>・</i>ぽっぷ</span><span class="fr"><small>ゆめかわ★</small>ウイルス<i>・</i>ぽっぷ</span></div>
- <p class="sub2">〜パステルカラーのサイバー防衛戦！キー連打で大優勝★〜</p>
- <div class="chars">
-  <div class="cc"><div class="ch"><i class="stars"></i><div class="fc c0"><i class="lk"></i><i class="e"></i><i class="e r"></i><i class="bl"></i><i class="bl r"></i><i class="m"></i></div></div>
-   <div class="nm">ぷにぷにランサムちゃん</div><div class="qt">「データを人質にとっちゃうぞ♡」</div></div>
-  <div class="cc"><div class="ch"><div class="fc c1"><i class="hk"></i><i class="cr"></i><i class="br"></i><i class="e"></i><i class="e r"></i><i class="bl"></i><i class="bl r"></i><i class="m"></i></div></div>
-   <div class="nm">てくてくフィッシング</div><div class="qt">「ニセのリンクで釣っちゃうよ〜」</div></div>
-  <div class="cc"><div class="ch"><div class="fc c2"><i class="an"></i><i class="an r"></i><i class="xx">&gt;_&lt;</i><i class="bl"></i><i class="bl r"></i></div></div>
-   <div class="nm">パニックDDoS</div><div class="qt">「みんなで押しかけるよ！」</div></div>
- </div>
- <button class="btn hot" id="go">あそぶ <small>[Enter]</small></button>
- <!-- 本日のトップ：曲ごとに1行。記録がない曲は「--」（以下は見本の数字） -->
+ <!-- 背景は1枚の絵（images/title.png）。タイトル・キャラ3体・名前とセリフ・「あそぶ」ボタン・「クリック／Enterでスタート」は、絵に描かれている（仕様書 3.2） -->
+ <!-- スタッフ用：右上の隅に小さく（パスワードつき。仕様書 3.2） -->
+ <button class="sm" id="rst">ランキングをリセット</button>
+ <!-- 絵のボタンの上に重ねる、透明な「あそぶ」ボタン。文字は見えないが、読み上げ用に残す -->
+ <button id="go"><b>あそぶ</b><small>Enter</small></button>
+ <!-- 本日のトップ3：絵の下の白いパネルに重ねる。曲ごとに上位3人（難易度順）。中身は screens.js の renderToday が作る（仕様書 3.2、8.3） -->
  <div id="today">
-  <h3>★ 本日のトップ ★</h3>
-  <div class="tr"><span>きらきら星：<em>12,340点</em></span><span>ジングルベル：<em>8,760点</em></span><span>天国と地獄：<em>--</em></span></div>
+  <h3>★ 本日のトップ3 ★</h3>
+  <div class="tr"></div>
  </div>
- <button class="sm" id="rst">ランキングをリセット（スタッフ用）</button>
 </section>
 
 <!-- 曲選択画面：曲カード（#cards）は SONGS から自動で作る予定。以下は見本 -->

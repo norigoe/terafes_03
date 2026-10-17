@@ -72,7 +72,8 @@ p{margin:0}.sub{font-weight:700}
 .btn{font:inherit;font-weight:800;color:#fff;border:3px solid #fff;border-radius:36px;padding:12px 22px;cursor:pointer;background:linear-gradient(135deg,var(--pk),#c7a6ff);box-shadow:0 4px 0 #c46fa3}
 .btn.hot{background:linear-gradient(135deg,#ff7aa8,#ff9d5c);box-shadow:0 4px 0 #c4577e}
 .btn small{display:block;font-weight:500;font-size:12px}
-.btn:hover,.btn:focus-visible{transform:translateY(-2px);outline:3px solid var(--bl)}
+/* マウスを乗せたとき・キーボードで選んだとき：少し浮き上がり、白い縁を太く＋ピンクの光（押せないボタンには付けない） */
+.btn:not(:disabled):hover,.btn:focus-visible{transform:translateY(-2px);outline:none;box-shadow:0 0 0 4px #fff,0 0 18px 4px rgba(255,120,190,.75),0 4px 0 #c46fa3}
 /* 押せないとき（名前の入力中など）：薄くして、マウスを乗せても浮き上がらない。カーソルは普通の矢印（← タイトルへ の .back:disabled と同じ考え方） */
 .btn:disabled,.btn:disabled:hover{opacity:.4;cursor:default;transform:none;outline:none}
 .sm{font:inherit;font-size:11px;background:none;border:0;color:var(--ink);opacity:.6;cursor:pointer;text-decoration:underline}
@@ -85,41 +86,55 @@ kbd{display:inline-block;min-width:28px;padding:1px 7px;border-radius:7px;backgr
 /* --- 曲選択画面（#select） --- */
 .hd{margin:0;font-size:40px;font-weight:900;color:#ff4fa3;text-shadow:5.0px 0.0px 0 #fff,5.0px 0.6px 0 #fff,4.9px 1.1px 0 #fff,4.7px 1.7px 0 #fff,4.5px 2.2px 0 #fff,4.2px 2.7px 0 #fff,3.9px 3.1px 0 #fff,3.5px 3.5px 0 #fff,3.1px 3.9px 0 #fff,2.7px 4.2px 0 #fff,2.2px 4.5px 0 #fff,1.7px 4.7px 0 #fff,1.1px 4.9px 0 #fff,0.6px 5.0px 0 #fff,0.0px 5.0px 0 #fff,-0.6px 5.0px 0 #fff,-1.1px 4.9px 0 #fff,-1.7px 4.7px 0 #fff,-2.2px 4.5px 0 #fff,-2.7px 4.2px 0 #fff,-3.1px 3.9px 0 #fff,-3.5px 3.5px 0 #fff,-3.9px 3.1px 0 #fff,-4.2px 2.7px 0 #fff,-4.5px 2.2px 0 #fff,-4.7px 1.7px 0 #fff,-4.9px 1.1px 0 #fff,-5.0px 0.6px 0 #fff,-5.0px 0.0px 0 #fff,-5.0px -0.6px 0 #fff,-4.9px -1.1px 0 #fff,-4.7px -1.7px 0 #fff,-4.5px -2.2px 0 #fff,-4.2px -2.7px 0 #fff,-3.9px -3.1px 0 #fff,-3.5px -3.5px 0 #fff,-3.1px -3.9px 0 #fff,-2.7px -4.2px 0 #fff,-2.2px -4.5px 0 #fff,-1.7px -4.7px 0 #fff,-1.1px -4.9px 0 #fff,-0.6px -5.0px 0 #fff,-0.0px -5.0px 0 #fff,0.6px -5.0px 0 #fff,1.1px -4.9px 0 #fff,1.7px -4.7px 0 #fff,2.2px -4.5px 0 #fff,2.7px -4.2px 0 #fff,3.1px -3.9px 0 #fff,3.5px -3.5px 0 #fff,3.9px -3.1px 0 #fff,4.2px -2.7px 0 #fff,4.5px -2.2px 0 #fff,4.7px -1.7px 0 #fff,4.9px -1.1px 0 #fff,5.0px -0.6px 0 #fff,0 0 14px #ff8fc7}
 
-/* --- タイトル画面の「本日のトップ」（#today）：曲ごとに1行 --- */
-#today{width:900px;padding:8px 24px 10px;border-radius:22px;background:rgba(255,255,255,.7);font-size:16px;font-weight:700;line-height:1.5;color:var(--ink)}
-#today h3{margin:0 0 2px;font-size:16px;color:#ff4fa3}
-#today .tr{display:flex;justify-content:center;gap:34px}
-#today .tr em{font-style:normal;font-weight:900}
+/* --- タイトル画面の「本日のトップ3」（#today）：曲ごとに1列、上位3人。中身は screens.js の renderToday が作る --- */
+/* 絵の白いパネル（絵の上で 左27・上648・幅1618・高さ269）に重ねる。パネルの色は絵のものを使うので、背景はなし */
+#today{position:absolute;left:17px;top:414px;width:1033px;height:171px;box-sizing:border-box;padding:8px 24px 0;font-weight:700;color:var(--ink)}
+#today h3{margin:0 0 4px;font-size:18px;font-weight:900;color:#ff4fa3}
+#today .tr{display:grid;grid-auto-flow:column;grid-auto-columns:1fr}
+.tcol{padding:0 12px;border-left:2px dashed #e8dcff}   /* 曲ごとの列。左に点線の区切り */
+.tcol:first-child{border-left:0}
+/* 曲名の札：ふんわりした淡いグラデーションの角丸。色は列ごとに --c1（淡い色）--c2（もっと淡い色）--ct（文字の色）で変える */
+.tsong{margin:0 0 4px;padding:3px 0;border-radius:14px;font-size:16px;font-weight:900;color:var(--ct);background:linear-gradient(90deg,var(--c1),var(--c2));box-shadow:inset 0 0 0 2px rgba(255,255,255,.8)}
+.tcol:nth-child(4n+1){--c1:#ffd3ea;--c2:#ffeef7;--ct:#e2368a}
+.tcol:nth-child(4n+2){--c1:#e6d6ff;--c2:#f4eeff;--ct:#8a4fe0}
+.tcol:nth-child(4n+3){--c1:#d3e7ff;--c2:#ecf5ff;--ct:#2a7fd0}
+.tcol:nth-child(4n+4){--c1:#d2f4e8;--c2:#ecfbf5;--ct:#1f9c74}
+/* 1行：メダル・名前・点数 */
+.trow{display:grid;grid-template-columns:26px 1fr auto;align-items:center;gap:6px;margin:3px 0;padding:1px 8px 1px 2px;border-radius:12px;background:rgba(255,255,255,.9);font-size:15px;text-align:left}
+.trow .tn{overflow:hidden;white-space:nowrap}
+.trow em{font-style:normal;font-weight:900}
+.trow.none{opacity:.35}                              /* 記録がない行（「--」）は薄く */
+/* メダル：1位＝金、2位＝銀、3位＝銅 */
+.md{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:900;color:#6b4a00;border:2px solid #fff;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+.md1{background:radial-gradient(circle at 35% 30%,#fff6c4,#f5c518 60%,#d49a00)}
+.md2{background:radial-gradient(circle at 35% 30%,#ffffff,#cfd6e0 60%,#9aa6b6);color:#4a5566}
+.md3{background:radial-gradient(circle at 35% 30%,#ffe2c8,#e39a5c 60%,#b8682c);color:#5a2e0c}
 
-/* ここから下はタイトル画面専用のCSS。タイトル文字・キャラ3体・背景の格子など */
-/* --- タイトル画面（キャラ紹介デザイン） --- */
-#title{justify-content:center;gap:12px}
-#title #go{margin-top:6px;padding:12px 44px;font-size:22px}
+/* ここから下はタイトル画面専用のCSS */
+/* --- タイトル画面：背景は1枚の絵（images/title.png、1672×941）。その上に、透明なボタン・本日のトップ3・リセットを重ねる ---
+   位置は「絵の上の位置 × 0.638（＝1067÷1672）」で計算している。絵を差しかえて位置が変わったら、left・top・width・height を直す */
+#title{background:url("images/title.png") 0 0/100% 100% no-repeat}
+/* スタッフ用リセット：右上の隅に小さく */
+#rst{position:absolute;right:14px;top:8px;z-index:3}
 /* 背景に浮かぶハート・星の置き場。個々の要素は JavaScript が作り、rise アニメーションで上に昇る */
 #fl{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:0}
+/* タイトル画面を表示しているときだけ、ハート・星（#fl）と白い粒（.spk）を絵の手前に出す（ほかの画面では、今までどおり画面の奥）。pointer-events:none で、粒の上をクリックしてもボタンが押せるようにする */
+#stage:has(#title.on) #fl,#stage:has(#title.on) .spk{z-index:2;pointer-events:none}
 #fl i{position:absolute;bottom:-30px;font-style:normal;opacity:.55;animation:rise linear infinite}
 @keyframes rise{to{transform:translateY(-660px) rotate(20deg)}}
-/* タイトル文字：同じ文字を2枚重ねている。.bk＝白い縁取り＋光（奥）、.fr＝虹色グラデーション（手前）。背景グラデーションを文字の形で切り抜く（background-clip:text） */
-.ttl{display:grid;justify-items:center;margin:8px 0 10px;font-size:56px;font-weight:900;line-height:1.2;white-space:nowrap}
-.ttl span{grid-area:1/1}
-.ttl small{font-size:.66em;margin-right:.08em}  /* 「ゆめかわ★」は枕詞なので小さく */
-.ttl i{font-style:normal;margin:0 -.16em}       /* 「・」の両側を詰めて、「ウイルス・ぽっぷ」をひとまとまりに */
-.ttl .bk{color:#fff;text-shadow:8.0px 0.0px 0 #fff,7.9px 0.9px 0 #fff,7.8px 1.8px 0 #fff,7.6px 2.6px 0 #fff,7.2px 3.5px 0 #fff,6.8px 4.3px 0 #fff,6.3px 5.0px 0 #fff,5.7px 5.7px 0 #fff,5.0px 6.3px 0 #fff,4.3px 6.8px 0 #fff,3.5px 7.2px 0 #fff,2.6px 7.6px 0 #fff,1.8px 7.8px 0 #fff,0.9px 7.9px 0 #fff,0.0px 8.0px 0 #fff,-0.9px 7.9px 0 #fff,-1.8px 7.8px 0 #fff,-2.6px 7.6px 0 #fff,-3.5px 7.2px 0 #fff,-4.3px 6.8px 0 #fff,-5.0px 6.3px 0 #fff,-5.7px 5.7px 0 #fff,-6.3px 5.0px 0 #fff,-6.8px 4.3px 0 #fff,-7.2px 3.5px 0 #fff,-7.6px 2.6px 0 #fff,-7.8px 1.8px 0 #fff,-7.9px 0.9px 0 #fff,-8.0px 0.0px 0 #fff,-7.9px -0.9px 0 #fff,-7.8px -1.8px 0 #fff,-7.6px -2.6px 0 #fff,-7.2px -3.5px 0 #fff,-6.8px -4.3px 0 #fff,-6.3px -5.0px 0 #fff,-5.7px -5.7px 0 #fff,-5.0px -6.3px 0 #fff,-4.3px -6.8px 0 #fff,-3.5px -7.2px 0 #fff,-2.6px -7.6px 0 #fff,-1.8px -7.8px 0 #fff,-0.9px -7.9px 0 #fff,-0.0px -8.0px 0 #fff,0.9px -7.9px 0 #fff,1.8px -7.8px 0 #fff,2.6px -7.6px 0 #fff,3.5px -7.2px 0 #fff,4.3px -6.8px 0 #fff,5.0px -6.3px 0 #fff,5.7px -5.7px 0 #fff,6.3px -5.0px 0 #fff,6.8px -4.3px 0 #fff,7.2px -3.5px 0 #fff,7.6px -2.6px 0 #fff,7.8px -1.8px 0 #fff,7.9px -0.9px 0 #fff,0 0 18px #ff8fc7,0 0 34px #ff8fc7}
-.ttl .fr{background:linear-gradient(90deg,#ff3fa0,#b84df0 50%,#2aa6f5);-webkit-background-clip:text;background-clip:text;color:transparent}
-.sub2{font-size:21px;font-weight:800;text-shadow:0 0 6px #fff,0 0 6px #fff}
-.chars{display:flex;gap:60px;margin-top:14px}
-.cc{width:250px}
-.cc .ch{--s:.86;margin:0 auto -8px}  /* 題字・サブタイトルとぶつからないよう、少し小さく */
-.cc:nth-child(2) .ch{animation-delay:-.8s}.cc:nth-child(3) .ch{animation-delay:-1.6s}
-.nm{white-space:nowrap;margin-top:8px;font-size:24px;font-weight:800;text-shadow:0 0 6px #fff,0 0 6px #fff,0 0 6px #fff}
-.qt{font-size:15px;font-weight:700;color:#7a5aa8}
+/* あそぶ：絵のボタン（絵の上で 左533・上303・幅609・高さ289）にぴったり重ねる、透明なボタン */
+#go{position:absolute;left:340px;top:193px;width:389px;height:185px;padding:0;border:0;border-radius:46px;background:transparent;color:transparent;font:inherit;cursor:pointer;transition:box-shadow .15s,background .15s}
+#go b,#go small{position:absolute;width:1px;height:1px;overflow:hidden}   /* 文字は見せない（読み上げ用に残すだけ） */
+/* 乗せたとき：光や枠は付けない（絵のボタンの形とずれて、すき間ができるため）。カーソルは上の cursor:pointer で、ふつうの手の形になる */
+#go:hover,#go:focus-visible{outline:none}
 
 /* --- セレクト画面の曲カード（クラス名は s で始める。.cr などはキャラの部品で使っていて、同じ名前だと見た目が混ざってしまう）
    3枚を横に並べる。.on が付いたものが「選んでいる曲」（青い枠で強調）。カードの中は、上から 曲名 → キャラ → 星とラベル → レーン・長さ → キー --- */
 #select{gap:22px}
 /* --- タイトルへ戻るボタン（セレクト画面とリザルト画面の左上）。.back を付けたボタン --- */
 .back{position:absolute;left:16px;top:10px;font:inherit;font-size:14px;font-weight:700;color:var(--ink);padding:3px 14px;border:2px solid #cdb6ff;border-radius:16px;background:rgba(255,255,255,.8);cursor:pointer;z-index:2}
-.back:hover,.back:focus-visible{background:#fff;border-color:#6fb3ff;outline:none}
+/* 乗せたとき：水色の枠をやめて、ほかのボタンと同じ「白い縁＋ピンクの光」にそろえる（押せないときは付けない） */
+.back:not(:disabled):hover,.back:focus-visible{background:#fff;border-color:#fff;outline:none;box-shadow:0 0 0 3px #fff,0 0 14px 3px rgba(255,120,190,.7)}
 .back small{font-size:11px;font-weight:500;opacity:.7}
 .back:disabled{opacity:.4;cursor:default}
 #cards{display:flex;gap:32px}
