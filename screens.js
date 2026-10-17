@@ -22,7 +22,8 @@ fit();
 for (let i = 0; i < 20; i++) {
   const d = document.createElement('div');
   d.className = 'spk';
-  d.style.cssText = 'left:' + (i * 41 % W) + 'px;animation-duration:' + (8 + i % 5 * 3) + 's;animation-delay:-' + (i * 1.7) + 's';
+  // ★ 横の位置は 0, 53, 106 … 1007px（画面の横幅 1067px 全体に散らばる。41 だと 779px までで、右の方に降りてこなかった）
+  d.style.cssText = 'left:' + (i * 53 % W) + 'px;animation-duration:' + (8 + i % 5 * 3) + 's;animation-delay:-' + (i * 1.7) + 's';
   document.getElementById('stage').prepend(d);
 }
 
@@ -44,7 +45,10 @@ const Screens = (() => {                                      // ★ game.js と
   const NAMES = ['title', 'select', 'play', 'result'];        // ★ 4つの画面の id（仕様書 3.1）
   const RESET_PASS = '1026';                                  // ★ ランキングのリセットのパスワード（スタッフ用）。変えるときは、ここだけ直す
   let state = 'title';                                        // ★ いま表示している画面
-  let sel = 0;                                                // ★ セレクト画面で選択中の曲の番号
+  // ★ 曲を見せる順番：難易度順（星の少ない順。同じ星なら SONGS の順）。中身は曲の番号。例：[0, 1, 2]
+  //   タイトルの「本日のトップ3」と、セレクト画面の曲カードの両方で、この順番を使う
+  const ORDER = SONGS.map((_, k) => k).sort((a, b) => SONGS[a].star - SONGS[b].star || a - b);
+  let sel = 0;                                                // ★ セレクト画面で選択中のカードの位置（左から 0, 1, 2 …。曲の番号は ORDER[sel]）
   let last = 0;                                               // ★ 最後に遊んだ曲の番号（リザルトの「もういちどあそぶ」で使う）
   let naming = null;                                          // ★ 【できれば】名前を入力中の記録。入力中でなければ null
 
@@ -52,24 +56,42 @@ const Screens = (() => {                                      // ★ game.js と
   function show(name) {
     NAMES.forEach(id => $(id).classList.toggle('on', id === name));   // ★ 一致した画面だけ on、ほかは外す
     state = name;                                             // ★ キー入力の振り分けに使う
-    if (name === 'title') renderToday();                      // ★ タイトル画面を出すたびに、本日のトップを読み直す（仕様書 8.3）
+    if (name === 'title') renderToday();                      // ★ タイトル画面を出すたびに、本日のトップ3を読み直す（仕様書 8.3）
     if (document.activeElement && document.activeElement.blur) {
       document.activeElement.blur();                          // ★ 押したボタンのフォーカスを外す（Enter でボタンが二重に押されるのを防ぐ）
     }
   }
 
-  // 【本日のトップ】曲ごとに「曲名：スコア点」を横に並べる。今日の記録がない曲は「--」（仕様書 3.2、8.3）
+  // 【本日のトップ3】曲ごとに1列、今日の記録の上位3人を「メダル・名前・点数」で並べる。記録がない行は「--」（仕様書 3.2、8.3）
   function renderToday() {
-    const tr = document.querySelector('#today .tr');          // ★ 「★ 本日のトップ ★」の下の行
-    tr.innerHTML = '';                                        // ★ 前の表示（モックの見本の数字）を消す
-    SONGS.forEach((s, k) => {                                 // ★ 曲の数だけくり返す（k は曲の番号）
-      const e = Ranking.todayTop(k);                          // ★ その曲の、今日のいちばん高い記録（なければ null）
-      const span = document.createElement('span');            // ★ 1曲分の入れ物
-      const em = document.createElement('em');                // ★ 点数の部分（太字）
-      span.textContent = s.name + '：';                       // ★ textContent で入れる（HTMLとして解釈させない）
-      em.textContent = e ? e.s.toLocaleString() + '点' : '--';   // ★ 12340 → '12,340点'。記録がなければ '--'
-      span.appendChild(em);
-      tr.appendChild(span);
+    const tr = document.querySelector('#today .tr');          // ★ 「★ 本日のトップ3 ★」の下の入れ物
+    tr.innerHTML = '';                                        // ★ 前の表示を消す
+    const today = new Date().toDateString();                  // ★ 今日の日付の文字（'Sat Oct 10 2026' のような形）
+    ORDER.forEach(k => {                                      // ★ 難易度順に、曲の数だけくり返す（k は曲の番号）
+      const col = document.createElement('div');              // ★ 1曲分の列
+      col.className = 'tcol';
+      const song = document.createElement('div');             // ★ 曲名の札
+      song.className = 'tsong';
+      song.textContent = SONGS[k].name;                       // ★ textContent で入れる（HTMLとして解釈させない）
+      col.appendChild(song);
+      // ★ 上位10件（スコアの高い順）から今日の記録だけを取り出し、上から3件
+      const top = Ranking.top10(k).filter(e => new Date(e.at).toDateString() === today).slice(0, 3);
+      for (let i = 0; i < 3; i++) {                           // ★ 1位〜3位の3行
+        const e = top[i];                                     // ★ i+1 位の記録（なければ undefined）
+        const row = document.createElement('div');
+        row.className = 'trow' + (e ? '' : ' none');          // ★ 記録がない行は none（CSSで薄くする）
+        const md = document.createElement('span');            // ★ メダル（1＝金、2＝銀、3＝銅）
+        md.className = 'md md' + (i + 1);
+        md.textContent = i + 1;
+        const nm = document.createElement('span');            // ★ 名前
+        nm.className = 'tn';
+        nm.textContent = e ? e.n : '--';
+        const em = document.createElement('em');              // ★ 点数（太字）
+        em.textContent = e ? e.s.toLocaleString() + '点' : '--';   // ★ 12340 → '12,340点'
+        row.append(md, nm, em);
+        col.appendChild(row);
+      }
+      tr.appendChild(col);
     });
   }
 
@@ -201,28 +223,29 @@ const Screens = (() => {                                      // ★ game.js と
     return Math.round(beats * 60 / s.bpm);                    // ★ 1拍＝60÷BPM 秒
   }
 
-  // 【曲カードを作る】SONGS の曲の数だけ作る（仕様書 3.3）
+  // 【曲カードを作る】SONGS の曲の数だけ、難易度順（ORDER の順）に作る（仕様書 3.3）
   function buildCards() {
-    $('cards').innerHTML = SONGS.map((s, i) =>                // ★ 曲1つ（s）から、カード1枚のHTMLを作り、join('') で全部つなげて #cards に入れる
-      '<div class="card" data-i="' + i + '">' +
-        '<div class="scn"><b style="background:' + s.col + '">' + (i + 1) + '</b>' + s.name + '</div>' +                // ★ 番号と曲名
+    $('cards').innerHTML = ORDER.map((k, p) => {              // ★ k は曲の番号、p は左からの位置（0, 1, 2 …）。カード1枚のHTMLを作り、join('') で全部つなげる
+      const s = SONGS[k];
+      return '<div class="card" data-i="' + k + '">' +        // ★ data-i は曲の番号（クリックでその曲を始める）
+        '<div class="scn"><b style="background:' + s.col + '">' + (p + 1) + '</b>' + s.name + '</div>' +                // ★ 番号（左からの位置＝数字キー）と曲名
         '<div class="slot">' + charaHTML(s.chara, s.santa) + '</div>' +                                                  // ★ キャラ
         '<div class="srow"><span class="sstar" style="color:' + s.col + '">' + '★'.repeat(s.star) + '☆'.repeat(5 - s.star) + '</span>' +
           '<span class="slb" style="background:' + s.col + '">' + s.label + '</span></div>' +                           // ★ 星と難易度ラベル
         '<div class="sinfo">' + s.lanes + 'レーン／約' + songSec(s) + '秒</div>' +                                       // ★ レーン数と長さ
         '<div class="skey">キー：' + (s.lanes === 2 ? 'F J' : 'D F J K') + '</div>' +                                    // ★ 使うキー
-      '</div>'
-    ).join('');
+      '</div>';
+    }).join('');
     // ★ キー案内の数字も、曲の数に合わせる（曲を足したとき 1〜4 になる）
     document.querySelector('#select .hint').innerHTML =
       '← → で選んで Enter ／ <kbd>1</kbd>〜<kbd>' + SONGS.length + '</kbd>キーですぐスタート（Esc：タイトルへ）';
-    pick(0);                                                  // ★ はじめは1曲目を選択中にする
+    pick(0);                                                  // ★ はじめはいちばん左（いちばんやさしい曲）を選択中にする
   }
 
-  // 【曲カードを選ぶ】i 番目のカードだけ青い枠にする（仕様書 3.3）
-  function pick(i) {
-    sel = i;
-    document.querySelectorAll('#cards .card').forEach((c, k) => c.classList.toggle('on', k === i));
+  // 【曲カードを選ぶ】左から p 番目のカードだけ青い枠にする（仕様書 3.3）
+  function pick(p) {
+    sel = p;
+    document.querySelectorAll('#cards .card').forEach((c, q) => c.classList.toggle('on', q === p));
   }
 
   // 【キー入力の振り分け】画面ごとにキーの意味を変える（仕様書 4章）
@@ -238,8 +261,8 @@ const Screens = (() => {                                      // ★ game.js と
     } else if (state === 'select') {
       if (c === 'ArrowRight' || c === 'ArrowDown') pick((sel + 1) % n);          // ★ 次の曲（右端なら左端へ回り込む）
       else if (c === 'ArrowLeft' || c === 'ArrowUp') pick((sel + n - 1) % n);    // ★ 前の曲（左端なら右端へ）
-      else if (c === 'Enter') { e.preventDefault(); start(sel); }                // ★ 選択中の曲を開始
-      else if (num && +num[1] <= n) start(+num[1] - 1);                          // ★ 数字キー 1〜（曲の数）ですぐ開始
+      else if (c === 'Enter') { e.preventDefault(); start(ORDER[sel]); }         // ★ 選択中のカードの曲を開始
+      else if (num && +num[1] <= n) start(ORDER[+num[1] - 1]);                   // ★ 数字キー 1〜（曲の数）で、左からその番目のカードの曲をすぐ開始
       else if (c === 'Escape') show('title');
 
     } else if (state === 'play') {
@@ -267,7 +290,7 @@ const Screens = (() => {                                      // ★ game.js と
     if (p === RESET_PASS) {                                   // ★ パスワードが合ったときだけ、先へ進む（間違い・キャンセルは何もしない）
       if (confirm('ランキングを全部消します。よろしいですか？')) {   // ★ 確認ダイアログで「OK」を押したときだけ
         Ranking.reset();                                      // ★ 全曲の記録を消す（ranking.js）
-        renderToday();                                        // ★ 本日のトップを「--」に戻す
+        renderToday();                                        // ★ 本日のトップ3を「--」に戻す
       }
     }
     $('rst').blur();                                          // ★ フォーカスを外す（このあと Enter を押したとき、もう一度押されないように）
@@ -280,7 +303,7 @@ const Screens = (() => {                                      // ★ game.js と
   });
   $('cards').addEventListener('mouseover', e => {
     const card = e.target.closest('.card');
-    if (card) pick(+card.dataset.i);                          // ★ マウスを乗せたカードを選択中にする
+    if (card) pick(ORDER.indexOf(+card.dataset.i));           // ★ マウスを乗せたカードを選択中にする（曲の番号 → 左からの位置）
   });
 
   // 【ゲームの終わり】game.js が結果を渡してくるので、リザルト画面を出す（仕様書 10.2）
