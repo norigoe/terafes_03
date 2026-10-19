@@ -62,35 +62,43 @@ const Screens = (() => {                                      // ★ game.js と
     }
   }
 
-  // 【本日のトップ3】曲ごとに1列、今日の記録の上位3人を「メダル・名前・点数」で並べる。記録がない行は「--」（仕様書 3.2、8.3）
+  // 【本日のトップ3】曲ごとに、今日の記録の上位を「メダル・名前・点数」で並べる。記録がない行は「--」（仕様書 3.2、8.3）
+  //  ・ふつうは、曲ごとに1列でトップ3まで
+  //  ・曲が6曲以上のときは、いちばんやさしい2曲を1列にまとめて、それぞれトップ1だけ（列が多くなりすぎないように）
+  //  ・曲名の札の色は、曲の星の数で決まる（色は style.css の .tsong.s1〜.s6）
   function renderToday() {
     const tr = document.querySelector('#today .tr');          // ★ 「★ 本日のトップ3 ★」の下の入れ物
     tr.innerHTML = '';                                        // ★ 前の表示を消す
     const today = new Date().toDateString();                  // ★ 今日の日付の文字（'Sat Oct 10 2026' のような形）
-    ORDER.forEach(k => {                                      // ★ 難易度順に、曲の数だけくり返す（k は曲の番号）
-      const col = document.createElement('div');              // ★ 1曲分の列
+    // ★ 列の分け方。例：6曲なら [[0, 3], [1], [4], [5], [2]] のように、1列目だけ2曲（中身は曲の番号。難易度順）
+    const cols = ORDER.length >= 6 ? [ORDER.slice(0, 2)].concat(ORDER.slice(2).map(k => [k])) : ORDER.map(k => [k]);
+    cols.forEach(ks => {                                      // ★ 列の数だけくり返す（ks はその列の曲の番号）
+      const col = document.createElement('div');              // ★ 1列分の入れ物
       col.className = 'tcol';
-      const song = document.createElement('div');             // ★ 曲名の札
-      song.className = 'tsong';
-      song.textContent = SONGS[k].name;                       // ★ textContent で入れる（HTMLとして解釈させない）
-      col.appendChild(song);
-      // ★ 上位10件（スコアの高い順）から今日の記録だけを取り出し、上から3件
-      const top = Ranking.top10(k).filter(e => new Date(e.at).toDateString() === today).slice(0, 3);
-      for (let i = 0; i < 3; i++) {                           // ★ 1位〜3位の3行
-        const e = top[i];                                     // ★ i+1 位の記録（なければ undefined）
-        const row = document.createElement('div');
-        row.className = 'trow' + (e ? '' : ' none');          // ★ 記録がない行は none（CSSで薄くする）
-        const md = document.createElement('span');            // ★ メダル（1＝金、2＝銀、3＝銅）
-        md.className = 'md md' + (i + 1);
-        md.textContent = i + 1;
-        const nm = document.createElement('span');            // ★ 名前
-        nm.className = 'tn';
-        nm.textContent = e ? e.n : '--';
-        const em = document.createElement('em');              // ★ 点数（太字）
-        em.textContent = e ? e.s.toLocaleString() + '点' : '--';   // ★ 12340 → '12,340点'
-        row.append(md, nm, em);
-        col.appendChild(row);
-      }
+      const n = ks.length > 1 ? 1 : 3;                        // ★ 何位まで出すか（2曲まとめた列はトップ1だけ、ほかはトップ3）
+      ks.forEach(k => {                                       // ★ その列の曲の数だけくり返す（k は曲の番号）
+        const song = document.createElement('div');           // ★ 曲名の札
+        song.className = 'tsong s' + SONGS[k].star;           // ★ 星の数で札の色を変える（星1なら s1）
+        song.textContent = SONGS[k].name;                     // ★ textContent で入れる（HTMLとして解釈させない）
+        col.appendChild(song);
+        // ★ 上位10件（スコアの高い順）から今日の記録だけを取り出し、上から n 件
+        const top = Ranking.top10(k).filter(e => new Date(e.at).toDateString() === today).slice(0, n);
+        for (let i = 0; i < n; i++) {                         // ★ 1位〜n位の行
+          const e = top[i];                                   // ★ i+1 位の記録（なければ undefined）
+          const row = document.createElement('div');
+          row.className = 'trow' + (e ? '' : ' none');        // ★ 記録がない行は none（CSSで薄くする）
+          const md = document.createElement('span');          // ★ メダル（1＝金、2＝銀、3＝銅）
+          md.className = 'md md' + (i + 1);
+          md.textContent = i + 1;
+          const nm = document.createElement('span');          // ★ 名前
+          nm.className = 'tn';
+          nm.textContent = e ? e.n : '--';
+          const em = document.createElement('em');            // ★ 点数（太字）
+          em.textContent = e ? e.s.toLocaleString() + '点' : '--';   // ★ 12340 → '12,340点'
+          row.append(md, nm, em);
+          col.appendChild(row);
+        }
+      });
       tr.appendChild(col);
     });
   }
@@ -230,7 +238,7 @@ const Screens = (() => {                                      // ★ game.js と
       return '<div class="card" data-i="' + k + '">' +        // ★ data-i は曲の番号（クリックでその曲を始める）
         '<div class="scn"><b style="background:' + s.col + '">' + (p + 1) + '</b>' + s.name + '</div>' +                // ★ 番号（左からの位置＝数字キー）と曲名
         '<div class="slot">' + charaHTML(s.chara, s.santa) + '</div>' +                                                  // ★ キャラ
-        '<div class="srow"><span class="sstar" style="color:' + s.col + '">' + '★'.repeat(s.star) + '☆'.repeat(5 - s.star) + '</span>' +
+        '<div class="srow"><span class="sstar" style="color:' + s.col + '">' + '★'.repeat(s.star) + '☆'.repeat(Math.max(0, 6 - s.star)) + '</span>' +   // ★ 星は全部で6個（★が星の数、残りが☆）
           '<span class="slb" style="background:' + s.col + '">' + s.label + '</span></div>' +                           // ★ 星と難易度ラベル
         '<div class="sinfo">' + s.lanes + 'レーン／約' + songSec(s) + '秒</div>' +                                       // ★ レーン数と長さ
         '<div class="skey">キー：' + (s.lanes === 2 ? 'F J' : 'D F J K') + '</div>' +                                    // ★ 使うキー
