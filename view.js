@@ -126,8 +126,23 @@ const View = {                                                // ★ View とい
     }
   },
 
+  // 【画面を揺らす】ミスしたときの演出。r＝揺れののこり時間（秒、0.25 → 0）。毎フレーム game.js の loop から呼ぶ
+  //   keysound（中山の自分用アプリ）と同じ揺れ方：のこりが多いほど大きく、ランダムな向きにずらす（最初は横±5px・縦±3px）
+  //   #lanes に transform を付けるとレーンの帯（top:0・bottom:0）の高さがつぶれるので、プレイ画面 #play ごと動かす
+  shake(r) {
+    const p = $('play');                                      // ★ プレイ画面
+    if (r > 0) {                                              // ★ 揺れの時間がのこっていれば
+      const x = (Math.random() - 0.5) * 40 * r;               // ★ 横のずれ（-0.5〜0.5 × 40 × のこり。のこり 0.25秒なら ±5px）
+      const y = (Math.random() - 0.5) * 24 * r;               // ★ 縦のずれ（のこり 0.25秒なら ±3px）
+      p.style.transform = 'translate(' + x + 'px,' + y + 'px)';   // ★ ずらす
+    } else {                                                  // ★ 揺れが終わったら
+      p.style.transform = '';                                 // ★ 元の位置にもどす
+    }
+  },
+
   // 【ウイルスと粒を全部消す】ゲームの終わり・中断のとき
   clear() {
     $('field').innerHTML = '';                                // ★ #field の中を空にする
+    this.shake(0);                                            // ★ 揺れの途中で終わっても、画面を元の位置にもどす
   },
 };
