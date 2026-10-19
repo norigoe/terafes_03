@@ -31,6 +31,11 @@ const Sound = (() => {                                        // ★ game.js と
       const parts = tk.split(':');                            // ★ 'G7:2' → ['G7', '2']
       const name = parts[0];                                  // ★ コード名
       const d = parts.length > 1 ? Number(parts[1]) : 1;      // ★ 長さ（拍）。: がなければ 1拍
+      if (name === 'R') {                                     // ★ R は伴奏なし（弱起の小節など）。ベースも和音も鳴らさない
+        list.push({ b: b, d: d, none: true });                // ★ 「なし」の印だけ付けて、長さの分の場所はとっておく
+        b += d;                                               // ★ 拍を進める
+        return;                                               // ★ この字はここで終わり（forEach の次の字へ）
+      }
       const r = ROOT[name[0]] + (name[1] === '#' ? 1 : 0);    // ★ 根音（ド＝0 〜 シ＝11）。# なら半音上
       const top = 55 + (r + 5) % 12;                          // ★ 和音の根音の番号。ソ(55)〜ファ#(66) の間に置く（どのコードも同じくらいの高さになる）
       const ns = [top, top + (name.includes('m') ? 3 : 4), top + 7];   // ★ 根音・3度（短調 m は3、それ以外は4 半音上）・5度（7 半音上）＝ドミソの形
@@ -57,6 +62,7 @@ const Sound = (() => {                                        // ★ game.js と
     cs.forEach(c => {                                         // ★ 一覧を1つずつ見て
       if (beat >= c.b && beat < c.b + c.d) hit = c;           // ★ beat がそのコードの間に入っていれば、それ
     });
+    if (hit && hit.none) return null;                         // ★ R（伴奏なし）の間も null にする
     return hit;                                               // ★ 曲が終わった後は null（ベースも和音も鳴らさない）
   }
 
@@ -152,15 +158,16 @@ const Sound = (() => {                                        // ★ game.js と
       while (S.mel < S.notes.length && S.t0 + S.notes[S.mel].t < ahead) {   // ★ 【薄いメロディ】次のノーツが0.3秒先より前なら、予約する
         const n = S.notes[S.mel];                             // ★ 次のノーツ
         if (n.mel) {                                          // ★ メロディの音だけ（+ の2つ目からは鳴らさない）
-          tone(n.f, S.t0 + n.t, Math.min(0.6, n.d * spb), 'sine', VOL.melody);   // ★ 到達時刻に、小さい音で鳴らす（長さは最大0.6秒）
+          tone(n.fs[n.fs.length - 1], S.t0 + n.t, Math.min(0.6, n.d * spb), 'sine', VOL.melody);   // ★ 到達時刻に、小さい音で鳴らす（長さは最大0.6秒）。和音なら最後に書いた音（いちばん上のメロディ）だけ
         }
         S.mel++;                                              // ★ 次のノーツへ
       }
     },
 
-    // 【撃退した音】f＝そのノーツの高さ、sec＝長さ(秒)。薄いメロディより大きく、いますぐ鳴らす（仕様書 7章）
-    hit(f, sec) {
-      tone(f, ctx.currentTime, Math.min(0.6, sec), 'triangle', VOL.hit);   // ★ 長さは最大0.6秒
+    // 【撃退した音】fs＝そのノーツの高さ(Hz)の配列、sec＝長さ(秒)。薄いメロディより大きく、いますぐ鳴らす（仕様書 7章）
+    hit(fs, sec) {
+      const v = VOL.hit / Math.sqrt(fs.length);               // ★ 和音は1つずつの音量を少し下げる（2つなら約0.7倍、4つなら半分）。重なっても大きくなりすぎない
+      fs.forEach(f => tone(f, ctx.currentTime, Math.min(0.6, sec), 'triangle', v));   // ★ 全部の音を同時に鳴らす。長さは最大0.6秒
     },
   };
 })();
