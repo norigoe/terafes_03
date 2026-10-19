@@ -189,9 +189,3 @@ kbd{display:inline-block;min-width:28px;padding:1px 7px;border-radius:7px;backgr
 .tip{width:906px;box-sizing:border-box;padding:10px 24px;border:3px dotted #ffb3da;border-radius:20px;background:linear-gradient(#fffdfd,#fff3fb);font-size:15px;font-weight:700;line-height:1.6;box-shadow:0 0 0 4px #fff,0 6px 14px rgba(150,70,200,.18)}
 /* キー案内：白い角丸の札 */
 .hint{padding:3px 18px;border:2px solid #ffd0ea;border-radius:16px;background:rgba(255,255,255,.85);font-size:14px;font-weight:700;color:#a24df0}
-
-/* ============================================================
-   【仮】モックアップ確認用の切り替えボタン（本番では screens.js が画面を切り替えるので、削除する）
-   ============================================================ */
-#mockbar{position:fixed;right:8px;bottom:8px;z-index:99;display:flex;gap:6px}
-#mockbar button{font:inherit;font-size:12px;padding:4px 10px;border:2px solid #fff;border-radius:14px;background:rgba(43,31,74,.85);color:#fff;cursor:pointer}

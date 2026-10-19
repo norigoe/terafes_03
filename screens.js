@@ -141,7 +141,7 @@ const Screens = (() => {                                      // ★ game.js と
   // 【ランキング】k番目の曲の上位10件を、1行に「順位　名前　◯点　◯%」で並べる。今回の記録 me は強調する（仕様書 3.5、8.2）
   function renderRanking(k, me) {
     const ol = $('rl');                                       // ★ ランキングのリスト（<ol>）
-    ol.innerHTML = '';                                        // ★ 前の表示（モックの見本）を消す
+    ol.innerHTML = '';                                        // ★ 前の表示を消す
     naming = null;                                            // ★ まず「入力中ではない」にしておく（10位以内なら、下で入れる）
     Ranking.top10(k).forEach((e, i) => {                      // ★ 1件ずつ（i は 0 から始まる）
       const li = document.createElement('li');                // ★ 1行
@@ -323,11 +323,3 @@ const Screens = (() => {                                      // ★ game.js と
 
   return { show };                                            // ★ 外に出すのは show だけ（仕様書 10.1）
 })();
-
-// ------------------------------------------------------------
-// 【仮】モックアップ確認用：ボタンで画面を切り替える（本番では削除する）
-//  ・Screens.show を使うので、キー入力の振り分けも、切り替えた画面に合わせて変わる。
-// ------------------------------------------------------------
-document.querySelectorAll('#mockbar button').forEach(b => {
-  b.onclick = () => Screens.show(b.dataset.go);
-});
