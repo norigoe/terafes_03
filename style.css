@@ -98,10 +98,20 @@ kbd{display:inline-block;min-width:28px;padding:1px 7px;border-radius:7px;backgr
 .tcol:first-child{border-left:0}
 /* 曲名の札：ふんわりした淡いグラデーションの角丸。色は列ごとに --c1（淡い色）--c2（もっと淡い色）--ct（文字の色）で変える */
 .tsong{margin:0 0 4px;padding:3px 0;border-radius:14px;font-size:16px;font-weight:900;color:var(--ct);background:linear-gradient(90deg,var(--c1),var(--c2));box-shadow:inset 0 0 0 2px rgba(255,255,255,.8)}
-.tcol:nth-child(4n+1){--c1:#ffd3ea;--c2:#ffeef7;--ct:#e2368a}
-.tcol:nth-child(4n+2){--c1:#e6d6ff;--c2:#f4eeff;--ct:#8a4fe0}
-.tcol:nth-child(4n+3){--c1:#d3e7ff;--c2:#ecf5ff;--ct:#2a7fd0}
-.tcol:nth-child(4n+4){--c1:#d2f4e8;--c2:#ecfbf5;--ct:#1f9c74}
+/* 札の色：曲の星の数で決める（screens.js の renderToday が s1〜s6 を付ける）。--c1（淡い色）--c2（もっと淡い色）--ct（文字の色） */
+.tsong{--c1:#ffd3ea;--c2:#ffeef7;--ct:#e2368a}            /* 決まっていないときはピンク */
+.tsong.s1{--c1:#ffd3ea;--c2:#ffeef7;--ct:#e2368a}         /* 星1（らくちん）：ピンク */
+.tsong.s2{--c1:#ffdcc0;--c2:#fff1e4;--ct:#e0701f}         /* 星2（かんたん）：オレンジ */
+.tsong.s3{--c1:#ffeb99;--c2:#fff8d9;--ct:#b88300}         /* 星3（ふつう）：黄色（パニックDDoS の色） */
+.tsong.s4{--c1:#b6f5dc;--c2:#e6fbf3;--ct:#1f9c74}         /* 星4（ちょいむず）：エメラルドグリーン（てくてくフィッシングの本体の色） */
+.tsong.s5{--c1:#cfe8ff;--c2:#ecf6ff;--ct:#2a7fd0}         /* 星5（むずい）：水色 */
+.tsong.s6{--c1:#e6d6ff;--c2:#f4eeff;--ct:#8a4fe0}         /* 星6（げきむず）：ラベンダー */
+.tcol .trow + .tsong{margin-top:6px}                 /* 1列に2曲まとめたとき、2曲目の札の上を少しあける */
+/* 5列のとき（6曲以上のとき）：列の幅がせまくなるので、文字とメダルを小さくする */
+#today .tr:has(.tcol:nth-child(5)) .tcol{padding:0 6px}
+#today .tr:has(.tcol:nth-child(5)) .tsong{font-size:14px}
+#today .tr:has(.tcol:nth-child(5)) .trow{grid-template-columns:20px 1fr auto;gap:4px;padding:1px 6px 1px 2px;font-size:13px}
+#today .tr:has(.tcol:nth-child(5)) .md{width:18px;height:18px;font-size:11px}
 /* 1行：メダル・名前・点数 */
 .trow{display:grid;grid-template-columns:26px 1fr auto;align-items:center;gap:6px;margin:3px 0;padding:1px 8px 1px 2px;border-radius:12px;background:rgba(255,255,255,.9);font-size:15px;text-align:left}
 .trow .tn{overflow:hidden;white-space:nowrap}
@@ -155,6 +165,16 @@ kbd{display:inline-block;min-width:28px;padding:1px 7px;border-radius:7px;backgr
 #cards:has(.card:nth-child(4)) .card{padding:16px 10px 18px}
 #cards:has(.card:nth-child(4)) .scn{gap:6px;min-height:2.4em;font-size:18px;line-height:1.2;white-space:normal;text-align:left}
 #cards:has(.card:nth-child(4)) .ch{--s:.64}
+/* 6枚のとき（6枚目のカードがあるとき）：2段×3枚。カードは横長で、左にキャラ、右に 星／難易度ラベル（2行）／レーン・長さ。キーの行は出さない */
+#cards:has(.card:nth-child(6)){flex-wrap:wrap;gap:14px 24px}
+#cards:has(.card:nth-child(6)) .card{flex:0 0 286px;display:grid;grid-template-columns:96px 1fr;column-gap:10px;row-gap:5px;align-items:center;justify-items:start;padding:12px 14px;text-align:left}
+#cards:has(.card:nth-child(6)) .scn{grid-column:1/3;min-height:0;font-size:19px;white-space:nowrap}   /* 曲名：1行目に横いっぱい */
+#cards:has(.card:nth-child(6)) .slot{grid-column:1;grid-row:2/4;justify-self:center;margin:0;--w:96px}   /* キャラ：左 */
+#cards:has(.card:nth-child(6)) .ch{--s:.6}
+#cards:has(.card:nth-child(6)) .srow{grid-column:2;align-items:flex-start;gap:4px}   /* 星と難易度ラベル：右（2行） */
+#cards:has(.card:nth-child(6)) .sstar{font-size:17px}
+#cards:has(.card:nth-child(6)) .sinfo{grid-column:2;font-size:14px}                   /* レーン・長さ：右 */
+#cards:has(.card:nth-child(6)) .skey{display:none}
 .card .slot{--w:100px;margin:12px 0 0}
 .card .ch{--s:.72}
 .scn{font-size:22px;font-weight:800;display:flex;align-items:center;gap:8px;white-space:nowrap}
