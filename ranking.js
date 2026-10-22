@@ -14,18 +14,33 @@ const Ranking = (() => {                                      // ★ game.js と
   const MAX = 10;                                             // ★ 曲ごとに残す件数（上位10件）
   const NONAME = 'ななし';                                    // ★ 名前の初期値
   let lastAt = 0;                                             // ★ 最後に使った登録時刻（同じ時刻の記録ができないようにする）
+  let saveNG = false;                                         // ★ 保存に失敗したことがあれば true。そのあとはメモリ（D）だけを使う（B-001）
+
+  // 【LocalStorage から読む】k番目の曲の記録の配列を返す。読めなかったら null
+  function read(k) {
+    try {
+      const v = JSON.parse(localStorage.getItem(KEY(k)) || '[]');   // ★ 文字列 → 配列。保存が無ければ '[]'（空の配列）
+      return Array.isArray(v) ? v.filter(ok) : [];            // ★ 配列でなければ空。形のおかしい記録は取り除く
+    } catch (e) {
+      return null;                                            // ★ 読み込みに失敗した（LocalStorage が使えない、中身がこわれている）
+    }
+  }
 
   // 【読み込み】k番目の曲の記録を返す。LocalStorage から読むのは、はじめの1回だけ
   function list(k) {
     if (!D[k]) {                                              // ★ まだメモリに無ければ、LocalStorage から読む
-      try {
-        const v = JSON.parse(localStorage.getItem(KEY(k)) || '[]');   // ★ 文字列 → 配列。保存が無ければ '[]'（空の配列）
-        D[k] = Array.isArray(v) ? v.filter(ok) : [];          // ★ 配列でなければ空。形のおかしい記録は取り除く
-      } catch (e) {
-        D[k] = [];                                            // ★ 読み込みに失敗したら、空として扱う（仕様書 8.2）
-      }
+      D[k] = read(k) || [];                                   // ★ 読み込みに失敗したら、空として扱う（仕様書 8.2）
     }
     return D[k];
+  }
+
+  // 【読み直し】保存する前に、LocalStorage の最新の記録をメモリに入れ直す（B-001）
+  //  ・ほかのウィンドウ（タブ）で保存された記録を、上書きして消さないようにするため
+  //  ・読めないとき、保存に失敗したことがあるときは、メモリの記録をそのまま使う（仕様書 8.2）
+  function reload(k) {
+    const v = saveNG ? null : read(k);                        // ★ 保存に失敗したことがあれば、読み直さない
+    if (v) D[k] = v;                                          // ★ 読めたときだけ入れ直す
+    return list(k);
   }
 
   // 【記録の形が正しいか】s・r・at が数で、n が文字なら OK
@@ -38,6 +53,7 @@ const Ranking = (() => {                                      // ★ game.js と
     try {
       localStorage.setItem(KEY(k), JSON.stringify(D[k]));     // ★ 配列 → 文字列にして保存
     } catch (e) {
+      saveNG = true;                                          // ★ 保存できなかったことを覚えておく（このあとは読み直さない）
       // ★ 書き込みに失敗しても無視して、ゲームを続ける（仕様書 8.2）
     }
   }
@@ -60,7 +76,7 @@ const Ranking = (() => {                                      // ★ game.js と
     add(k, s, r) {
       lastAt = Math.max(Date.now(), lastAt + 1);              // ★ 登録時刻。前の記録と同じミリ秒になったら1ミリ秒ずらす（setName で記録を見分けるため）
       const me = { s: s, r: r, at: lastAt, n: NONAME };       // ★ 今回の記録
-      const l = list(k).concat([me]);                         // ★ 今までの記録に、今回の記録を足した配列
+      const l = reload(k).concat([me]);                       // ★ 最新の記録を読み直して（B-001）、今回の記録を足した配列
       l.sort((a, b) => b.s - a.s || a.at - b.at);             // ★ スコアの高い順。同じ点なら、先に出した人が上
       D[k] = l.slice(0, MAX);                                 // ★ 上から10件だけ残す
       save(k);
@@ -69,7 +85,7 @@ const Ranking = (() => {                                      // ★ game.js と
 
     // 【できれば】k番目の曲の、登録時刻が at の記録の名前を n にして保存する
     setName(k, at, n) {
-      const e = list(k).find(x => x.at === at);               // ★ 登録時刻で、どの記録かを探す
+      const e = reload(k).find(x => x.at === at);             // ★ 最新の記録を読み直して（B-001）、登録時刻で、どの記録かを探す
       if (e) {                                                // ★ 見つかったときだけ（10位より下で消えていたら、何もしない）
         e.n = cleanName(n);
         save(k);
