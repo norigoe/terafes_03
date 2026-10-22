@@ -157,6 +157,7 @@ const Screens = (() => {                                      // ★ game.js と
         inp.id = 'nm';                                        // ★ id="nm"（見た目は result.css の #nm）
         inp.maxLength = 6;                                    // ★ 6文字まで（仕様書 8.2）
         inp.placeholder = 'なまえ';                           // ★ 何も入っていないときに薄く出る文字
+        inp.setAttribute('aria-label', 'なまえ');             // ★ 読み上げ用の名前（placeholder だけだと、入力欄の名前として読まれないことがある）
         inp.autocomplete = 'off';                             // ★ ブラウザが前に入れた名前を出さないように（展示では毎回ちがう人が遊ぶ）
         inp.addEventListener('keydown', nameKey);             // ★ 入力欄でキーを押したとき
         nm.appendChild(inp);

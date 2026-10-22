@@ -20,11 +20,13 @@
 <!-- #app（外枠）の中に #stage（舞台 1067×600）があり、その中に4つの画面が重なっている -->
 <div id="app"><div id="stage">
 
-<!-- 背景に浮かぶハート・星（全画面共通。個々の要素は screens.js が作る） -->
-<div id="fl"></div>
+<!-- 背景に浮かぶハート・星（全画面共通。個々の要素は screens.js が作る）。飾りなので、読み上げない（aria-hidden） -->
+<div id="fl" aria-hidden="true"></div>
 
 <!-- タイトル画面：最初に表示される。Enter／あそぶボタンでセレクト画面へ -->
 <section id="title" class="scr on">
+ <!-- ページの見出し（読み上げ用）。タイトルは絵に描かれているので、画面には出さない（見えない大きさにして、はみ出した所を切る） -->
+ <h1 style="position:absolute;width:1px;height:1px;margin:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap">ゆめかわ★ウイルス・ぽっぷ</h1>
  <!-- 背景は1枚の絵（images/title.png）。タイトル・キャラ3体・名前とセリフ・「あそぶ」ボタン・「クリック／Enterでスタート」は、絵に描かれている（仕様書 3.2） -->
  <!-- スタッフ用：右上の隅に小さく（パスワードつき。仕様書 3.2） -->
  <button class="sm" id="rst">ランキングをリセット</button>
@@ -83,7 +85,7 @@
    <p id="rs"></p>
    <p id="rm"></p>
    <div class="ft">
-    <div class="deco"><div class="slot"><div class="ch"><i class="stars"></i><div class="fc c0"><i class="lk"></i><i class="e"></i><i class="e r"></i><i class="bl"></i><i class="bl r"></i><i class="m"></i></div></div></div><div class="slot"><div class="ch"><div class="fc c1"><i class="hk"></i><i class="cr"></i><i class="br"></i><i class="e"></i><i class="e r"></i><i class="bl"></i><i class="bl r"></i><i class="m"></i></div></div></div><div class="slot"><div class="ch"><div class="fc c2"><i class="an"></i><i class="an r"></i><i class="xx">&gt;_&lt;</i><i class="bl"></i><i class="bl r"></i></div></div></div></div>
+    <div class="deco" aria-hidden="true"><div class="slot"><div class="ch"><i class="stars"></i><div class="fc c0"><i class="lk"></i><i class="e"></i><i class="e r"></i><i class="bl"></i><i class="bl r"></i><i class="m"></i></div></div></div><div class="slot"><div class="ch"><div class="fc c1"><i class="hk"></i><i class="cr"></i><i class="br"></i><i class="e"></i><i class="e r"></i><i class="bl"></i><i class="bl r"></i><i class="m"></i></div></div></div><div class="slot"><div class="ch"><div class="fc c2"><i class="an"></i><i class="an r"></i><i class="xx">&gt;_&lt;</i><i class="bl"></i><i class="bl r"></i></div></div></div></div>
     <div class="stamp">認定</div>
    </div>
    <p id="rday"></p>
