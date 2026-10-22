@@ -2,7 +2,7 @@
    style.css（松井）　全体・タイトル・曲選択・プレイ画面の見た目
    ------------------------------------------------------------
    ・リザルト画面（認定証）の見た目は result.css（岡野）に書く。
-   ・元になったのは index_3songs.html の <style>。
+   ・画面ごとに「--- ◯◯ ---」の見出しのコメントで分けて書いている（全体 → プレイ画面 → 画面の共通 → セレクト画面 → タイトル画面）。
    ============================================================ */
 /* フォント：丸ゴシックの「M PLUS Rounded 1c」を fonts/ に同梱（ネットなしでも表示できる。ライセンスは fonts/OFL.txt）。
    太さは3種類：400（ふつう）、700（太字）、800（極太。900を指定したときもこれを使う） */
@@ -25,9 +25,10 @@ body{display:grid;place-items:center}
 @keyframes fall{from{transform:translateY(-10px)}to{transform:translateY(610px)}}
 /* レーン（ウイルスが落ちる縦の帯）。うすいピンクの縦線で区切る（認定証のかわいいトーンに合わせて、水色からピンクに） */
 .lane{position:absolute;top:0;bottom:0;width:110px;background:rgba(255,255,255,.38);border:0 solid #ffa8d8;border-width:0 2px;box-shadow:0 0 10px rgba(255,150,210,.6)}
-/* 判定ライン（ピンクの横線）と、判定リング（レーンごとの色の輪）。押したとき .f が付くと、色で塗りつぶされて大きくなる */
-.jl{position:absolute;left:313px;width:441px;top:calc(var(--hy) - 3px);height:6px;border-radius:3px;background:#ff66b0;box-shadow:0 0 8px #ff66b0}
-.rc{position:absolute;top:calc(var(--hy) - 40px);left:15px;width:80px;height:80px;border-radius:50%;border:6px solid var(--c);background:transparent;box-shadow:0 0 8px var(--c)}
+/* 判定ライン（ピンクの横線）と、判定リング（レーンごとの色の輪）。押したとき .f が付くと、色で塗りつぶされて大きくなる。
+   横の位置（left）と判定ラインの幅（width）は、レーン数に合わせて view.js の build が決める（ここには書かない） */
+.jl{position:absolute;top:calc(var(--hy) - 3px);height:6px;border-radius:3px;background:#ff66b0;box-shadow:0 0 8px #ff66b0}
+.rc{position:absolute;top:calc(var(--hy) - 40px);width:80px;height:80px;border-radius:50%;border:6px solid var(--c);background:transparent;box-shadow:0 0 8px var(--c)}
 .rc.f{background:var(--c);transform:scale(1.15)}
 /* 押すキーの名前（判定リングの下の白い札） */
 .kl{position:absolute;top:calc(var(--hy) + 52px);width:56px;height:36px;border-radius:12px;background:#fff;font-size:24px;font-weight:800;line-height:36px;text-align:center;color:#6a3fb0}
@@ -35,11 +36,10 @@ body{display:grid;place-items:center}
 /* HUD：左の札（曲名・スコア・コンボ）と、右の札（サーバーHP・のこり時間）。認定証に合わせて、ピンクのふち＋外側に白い縁＋うす紫の影 */
 #hud{position:absolute;inset:0;pointer-events:none;font-weight:800}
 /* 札の大きさは左右とも固定（高さ170px）。中身は上下の真ん中にそろえる。コンボが出たり消えたりしても、札の大きさは変わらない */
-.hp1{position:absolute;box-sizing:border-box;height:170px;display:flex;flex-direction:column;justify-content:center;padding:10px 16px;border:3px solid #ffb3da;border-radius:22px;background:linear-gradient(rgba(255,253,253,.88),rgba(255,243,251,.88));text-align:center;box-shadow:0 0 0 3px #fff,0 6px 14px rgba(150,70,200,.2)}
-#hl{left:16px;top:16px;width:235px}
+.hp1{position:absolute;height:170px;display:flex;flex-direction:column;justify-content:center;padding:10px 16px;border:3px solid #ffb3da;border-radius:22px;background:linear-gradient(rgba(255,253,253,.88),rgba(255,243,251,.88));text-align:center;box-shadow:0 0 0 3px #fff,0 6px 14px rgba(150,70,200,.2)}
 #hr{right:16px;top:16px;width:235px}
 /* 曲名の札（左）だけ、認定証と同じ虹色のふち（ふちだけ border-box に虹色、内側は padding-box に白〜うすピンク） */
-#hl{border-color:transparent;background:linear-gradient(rgba(255,253,253,.9),rgba(255,243,251,.9)) padding-box,linear-gradient(135deg,#ff6fb5 0%,#ffd84d 28%,#7be0b8 52%,#5ec8ff 76%,#c58bff 100%) border-box}
+#hl{left:16px;top:16px;width:235px;border-color:transparent;background:linear-gradient(rgba(255,253,253,.9),rgba(255,243,251,.9)) padding-box,linear-gradient(135deg,#ff6fb5 0%,#ffd84d 28%,#7be0b8 52%,#5ec8ff 76%,#c58bff 100%) border-box}
 #sn{font-size:16px;color:#8a5cf0}
 .lb{font-size:15px;color:#ff4fa3;margin-top:6px}
 #sc{font-size:34px;line-height:1.1;color:#3b2455}
@@ -68,8 +68,7 @@ body{display:grid;place-items:center}
 /* 画面（タイトル／リザルト）の共通スタイル。普段は display:none で隠し、.on が付いた画面だけ表示する（show() が切り替える） */
 .scr{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:11px;text-align:center;z-index:1}
 .scr.on{display:flex}
-h1{margin:0;font-size:47px;line-height:1.1;color:#fff;-webkit-text-stroke:3px var(--pk);paint-order:stroke fill;text-shadow:4px 4px 0 var(--bl)}
-p{margin:0}.sub{font-weight:700}
+p{margin:0}
 .row{display:flex;gap:18px;align-items:stretch;justify-content:center}
 /* ボタンの見た目（ピンクのグラデーション）。.hot を付けるとオレンジ系になる */
 .btn{font:inherit;font-weight:800;color:#fff;border:3px solid #fff;border-radius:36px;padding:12px 22px;cursor:pointer;background:linear-gradient(135deg,var(--pk),#c7a6ff);box-shadow:0 4px 0 #c46fa3}
@@ -91,7 +90,7 @@ kbd{display:inline-block;min-width:28px;padding:1px 7px;border-radius:7px;backgr
 
 /* --- タイトル画面の「本日のトップ3」（#today）：曲ごとに1列、上位3人。中身は screens.js の renderToday が作る --- */
 /* 絵の白いパネル（絵の上で 左27・上648・幅1618・高さ269）に重ねる。パネルの色は絵のものを使うので、背景はなし */
-#today{position:absolute;left:17px;top:414px;width:1033px;height:171px;box-sizing:border-box;padding:8px 24px 0;font-weight:700;color:var(--ink)}
+#today{position:absolute;left:17px;top:414px;width:1033px;height:171px;padding:8px 24px 0;font-weight:700;color:var(--ink)}
 #today h3{margin:0 0 4px;font-size:18px;font-weight:900;color:#ff4fa3}
 #today .tr{display:grid;grid-auto-flow:column;grid-auto-columns:1fr}
 .tcol{padding:0 12px;border-left:2px dashed #e8dcff}   /* 曲ごとの列。左に点線の区切り */
@@ -99,8 +98,7 @@ kbd{display:inline-block;min-width:28px;padding:1px 7px;border-radius:7px;backgr
 /* 曲名の札：ふんわりした淡いグラデーションの角丸。色は列ごとに --c1（淡い色）--c2（もっと淡い色）--ct（文字の色）で変える */
 .tsong{margin:0 0 4px;padding:3px 0;border-radius:14px;font-size:16px;font-weight:900;color:var(--ct);background:linear-gradient(90deg,var(--c1),var(--c2));box-shadow:inset 0 0 0 2px rgba(255,255,255,.8)}
 /* 札の色：曲の星の数で決める（screens.js の renderToday が s1〜s6 を付ける）。--c1（淡い色）--c2（もっと淡い色）--ct（文字の色） */
-.tsong{--c1:#ffd3ea;--c2:#ffeef7;--ct:#e2368a}            /* 決まっていないときはピンク */
-.tsong.s1{--c1:#ffd3ea;--c2:#ffeef7;--ct:#e2368a}         /* 星1（らくちん）：ピンク */
+.tsong,.tsong.s1{--c1:#ffd3ea;--c2:#ffeef7;--ct:#e2368a}  /* 星1（らくちん）：ピンク。星の数が決まっていないときも、この色 */
 .tsong.s2{--c1:#ffdcc0;--c2:#fff1e4;--ct:#e0701f}         /* 星2（かんたん）：オレンジ */
 .tsong.s3{--c1:#ffeb99;--c2:#fff8d9;--ct:#b88300}         /* 星3（ふつう）：黄色（パニックDDoS の色） */
 .tsong.s4{--c1:#b6f5dc;--c2:#e6fbf3;--ct:#1f9c74}         /* 星4（ちょいむず）：エメラルドグリーン（てくてくフィッシングの本体の色） */
@@ -155,10 +153,8 @@ kbd{display:inline-block;min-width:28px;padding:1px 7px;border-radius:7px;backgr
 .card{flex:0 1 286px;min-width:0;box-sizing:border-box;padding:18px 16px 20px;display:flex;flex-direction:column;align-items:center;gap:8px;border:4px solid transparent;border-radius:24px;
   background:radial-gradient(circle,rgba(255,143,199,.22) 2.5px,transparent 3px) 0 0/28px 28px padding-box,radial-gradient(circle,rgba(94,200,255,.22) 2.5px,transparent 3px) 14px 14px/28px 28px padding-box,linear-gradient(#fff,#fff) padding-box,linear-gradient(135deg,#ff6fb5 0%,#ffd84d 28%,#7be0b8 52%,#5ec8ff 76%,#c58bff 100%) border-box;
   box-shadow:0 6px 14px rgba(150,70,200,.15);cursor:pointer;transition:transform .15s,box-shadow .15s}
-/* 選んでいるカード：少し浮き上がり、外側に白い縁（4px）＋ピンクの光（中はほかのカードと同じ、真っ白＋水玉） */
-.card.on{transform:translateY(-4px);
-  background:radial-gradient(circle,rgba(255,143,199,.22) 2.5px,transparent 3px) 0 0/28px 28px padding-box,radial-gradient(circle,rgba(94,200,255,.22) 2.5px,transparent 3px) 14px 14px/28px 28px padding-box,linear-gradient(#fff,#fff) padding-box,linear-gradient(135deg,#ff6fb5 0%,#ffd84d 28%,#7be0b8 52%,#5ec8ff 76%,#c58bff 100%) border-box;
-  box-shadow:0 0 0 4px #fff,0 0 18px 4px rgba(255,120,190,.75)}
+/* 選んでいるカード：少し浮き上がり、外側に白い縁（4px）＋ピンクの光（中の背景は .card のまま。真っ白＋水玉） */
+.card.on{transform:translateY(-4px);box-shadow:0 0 0 4px #fff,0 0 18px 4px rgba(255,120,190,.75)}
 /* 4枚のとき（4枚目のカードがあるとき）：すき間を18pxにして、カードは1枚213px。曲名とキャラを少し小さくする。
    曲名は2行まで折り返してよい（2行分の高さを取っておくので、1行の曲名のカードとも高さがそろう） */
 #cards:has(.card:nth-child(4)){gap:18px}
