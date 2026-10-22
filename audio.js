@@ -128,12 +128,12 @@ const Sound = (() => {                                        // ★ game.js と
     },
 
     // 【BGMと薄いメロディの予約】毎フレーム呼ぶ。S はゲームの状態（game.js）
-    //   使うもの：S.song.bpm、S.t0（曲の開始時刻）、S.lead（準備時間）、S.dur（曲の長さ）、S.step（次のドラムの番号）、S.mel（次のメロディの番号）、S.notes
+    //   使うもの：S.song.bpm、S.t0（曲の開始時刻）、S.lead（準備時間）、S.dur（曲の長さ）、S.step（次のドラムの番号）、S.melIdx（次のメロディの番号）、S.notes
     sched(S) {
       const spb = 60 / S.song.bpm;                            // ★ 1拍の長さ（秒）
       const sp = spb / 4;                                     // ★ 16分音符の長さ（1拍を4つに分ける）
       const ahead = ctx.currentTime + 0.3;                    // ★ いまから0.3秒先まで予約する
-      const off = Math.round(S.lead / sp);                    // ★ 準備時間が16分音符いくつ分か（きらきら星は5拍＝20個、ほかの2曲は4拍＝16個）
+      const off = Math.round(S.lead / sp);                    // ★ 準備時間が16分音符いくつ分か（曲によって3〜5拍＝12〜20個。きらきら星は5拍＝20個）
       const end = Math.round(S.dur / sp);                     // ★ 曲の長さが16分音符いくつ分か（きらきら星は48拍＝192個）。ここから後は鳴らさない
 
       while (S.t0 + S.step * sp < ahead) {                    // ★ 【ドラム・ベース・和音】次の16分音符が0.3秒先より前なら、予約する
@@ -155,12 +155,12 @@ const Sound = (() => {                                        // ★ game.js と
         S.step++;                                             // ★ 次の16分音符へ
       }
 
-      while (S.mel < S.notes.length && S.t0 + S.notes[S.mel].t < ahead) {   // ★ 【薄いメロディ】次のノーツが0.3秒先より前なら、予約する
-        const n = S.notes[S.mel];                             // ★ 次のノーツ
-        if (n.mel) {                                          // ★ メロディの音だけ（+ の2つ目からは鳴らさない）
+      while (S.melIdx < S.notes.length && S.t0 + S.notes[S.melIdx].t < ahead) {   // ★ 【薄いメロディ】次のノーツが0.3秒先より前なら、予約する
+        const n = S.notes[S.melIdx];                          // ★ 次のノーツ
+        if (n.isMelody) {                                     // ★ メロディの音だけ（+ の2つ目からは鳴らさない）
           tone(n.fs[n.fs.length - 1], S.t0 + n.t, Math.min(0.6, n.d * spb), 'sine', VOL.melody);   // ★ 到達時刻に、小さい音で鳴らす（長さは最大0.6秒）。和音なら最後に書いた音（いちばん上のメロディ）だけ
         }
-        S.mel++;                                              // ★ 次のノーツへ
+        S.melIdx++;                                           // ★ 次のノーツへ
       }
     },
 

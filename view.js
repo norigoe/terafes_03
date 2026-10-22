@@ -46,12 +46,12 @@ const View = {                                                // ★ View とい
       h += '<div class="rc" id="rc' + l + '" style="left:' + (x + 15) + 'px;--c:' + this.COLORS[l] + '"></div>';   // ★ 判定リング（幅80なので 15 ずらすと真ん中）。id は rc0, rc1 …
       h += '<div class="kl" style="left:' + (x + 27) + 'px">' + keys[l] + '</div>';                   // ★ キー札（幅56なので 27 ずらすと真ん中）
     }
-    $('lanes').innerHTML = h;                                 // ★ できたHTMLを #lanes に入れる（モックアップの見本の絵は消える）
+    $('lanes').innerHTML = h;                                 // ★ できたHTMLを #lanes に入れる（前のプレイのレーンは消える）
     $('field').innerHTML = '';                                // ★ ウイルスの置き場を空にする
     $('sn').textContent = song.name;                          // ★ 左上の札に曲名
     $('jd').textContent = '';                                 // ★ 判定表示を空にする
     $('jd').className = '';                                   // ★ アニメーション用のクラス（pop）も外す
-    $('jd').removeAttribute('style');                         // ★ モックアップの style="opacity:1" を取る（残ると判定の文字が消えなくなる）
+    $('jd').removeAttribute('style');                         // ★ 前のプレイで say が付けた色（style）を取る
     $('rd').textContent = '';                                 // ★ 開始表示を空にする
   },
 
