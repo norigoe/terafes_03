@@ -106,19 +106,21 @@
 }
 
 /* ---------- 認定証の下の段（キャラ＋スタンプ） ---------- */
-.cert .ft{display:flex;justify-content:space-between;align-items:center;margin-top:4px}
+/* R-29：padding-bottom を追加（スタンプの外リング・影が日付 #rday にかぶらないように） */
+.cert .ft{display:flex;justify-content:space-between;align-items:center;margin-top:4px;padding-bottom:10px}
 .cert .deco{display:flex;align-items:center;gap:4px}
 .cert .slot{--w:60px}
 .cert .ch{--s:.46}
 
 /* 認定スタンプ：ぎざぎざシール風（ふち＋星つき）。ポンッと押される */
+/* R-29：サイズを 72→66px、文字を 21→19px に縮小 */
 .stamp{
-  position:relative;display:grid;place-items:center;width:72px;height:72px;
+  position:relative;display:grid;place-items:center;width:66px;height:66px;
   border-radius:50%;
   background:radial-gradient(circle at 35% 30%,#fff7fb 0 45%,#ffe0f0 100%);
   border:4px dotted #ff4fa3;
   box-shadow:0 0 0 4px #fff,0 0 0 7px #ff8fc7,0 5px 0 7px #e2368a;
-  color:#e2368a;font-size:21px;font-weight:900;letter-spacing:-.02em;
+  color:#e2368a;font-size:19px;font-weight:900;letter-spacing:-.02em;
   text-shadow:2px 2px 0 #fff,-2px -2px 0 #fff,2px -2px 0 #fff,-2px 2px 0 #fff;
   transform:rotate(-12deg);
   animation:stampDon .55s .35s cubic-bezier(.3,1.8,.5,1) both;
@@ -237,8 +239,9 @@
 #again,#home{
   transition:transform .12s;
 }
-#again:hover,#home:hover{transform:translateY(-3px) scale(1.04)}
-#again:active,#home:active{transform:translateY(2px) scale(.97)}
+/* R-28：押せない間（disabled）は浮き上がり・凹みをしない（仕様書3.5） */
+#again:not(:disabled):hover,#home:not(:disabled):hover{transform:translateY(-3px) scale(1.04)}
+#again:not(:disabled):active,#home:not(:disabled):active{transform:translateY(2px) scale(.97)}
 
 /* ---------- 動きが苦手な人向け：アニメを止める ---------- */
 @media (prefers-reduced-motion:reduce){
