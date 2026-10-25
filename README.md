@@ -25,7 +25,7 @@
 
 ## 3. ディレクトリ構造・起動手順
 
-**Git リポジトリ**：https://github.com/norigoe/terafes_03 【public にしてから提出】
+**Git リポジトリ**：https://github.com/norigoe/terafes_03
 
 ```
 terafes_03/
