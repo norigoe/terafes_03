@@ -4,6 +4,8 @@
    ・いまできていること：画面の拡大縮小、背景の演出、画面の切り替え（Screens.show）、
      画面ごとのキー入力の振り分け（仕様書 4章）、ボタン、曲カード（SONGS から作る）、本日のトップ、ランキングのリセット、
      リザルト画面（認定証・ランキング・【できれば】名前の入力・【できれば】豆知識）。
+   ・学園祭の展示用に、放置するとタイトルに戻るしくみを足した（仕様書にはない。展示用の変更）。
+   ・学園祭の展示用に、スタッフ画面（ランキングを1件ずつ消す・ぜんぶ消す）を足した。リセットボタンのパスワードのあとに開く。
    ・外から呼べるのは Screens.show(name) だけ（仕様書 10.1）。
    ============================================================ */
 
@@ -51,11 +53,23 @@ const Screens = (() => {                                      // ★ game.js と
   let sel = 0;                                                // ★ セレクト画面で選択中のカードの位置（左から 0, 1, 2 …。曲の番号は ORDER[sel]）
   let last = 0;                                               // ★ 最後に遊んだ曲の番号（リザルトの「もういちどあそぶ」で使う）
   let naming = null;                                          // ★ 【できれば】名前を入力中の記録。入力中でなければ null
+  // ★ 【放置対策】学園祭の展示用。タイトル以外の画面で、キー・クリックが3分なければタイトルに戻る
+  const IDLE_SEC = 180;                                       // ★ 何秒操作がなければ戻るか（3分＝180秒）。変えるときは、ここだけ直す
+  const WARN_SEC = 10;                                        // ★ 残り何秒からカウントダウンを出すか
+  let idleAt = Date.now();                                    // ★ 最後に操作した時刻（ミリ秒）
+  let playing = false;                                        // ★ 曲を遊んでいる最中なら true（プレイ画面で Space を押したら true。この間は数えない）
+  let fading = false;                                         // ★ 放置でタイトルに戻る切りかえ（ふわっと）の最中なら true。この間はキーを受け付けない
+  // ★ 【スタッフ画面】学園祭の展示用。ランキングを1件ずつ消せる画面（パスワードのあとに開く）
+  const STAFF_SEC = 180;                                      // ★ 何秒操作がなければ、スタッフ画面を自動で閉じるか（3分。閉じ忘れたとき、お客さんが記録を消せないように）
+  let staff = null;                                           // ★ 開いているスタッフ画面（div）。開いていなければ null
+  let staffK = ORDER[0];                                      // ★ スタッフ画面で選んでいる曲の番号（はじめは、いちばんやさしい曲）
 
   // 【画面を切り替える】name の画面だけに class="on" を付ける（表示する画面は常に1つ）
   function show(name) {
     NAMES.forEach(id => $(id).classList.toggle('on', id === name));   // ★ 一致した画面だけ on、ほかは外す
     state = name;                                             // ★ キー入力の振り分けに使う
+    idleAt = Date.now();                                      // ★ 【放置対策】画面が変わったら、時間を数え直す
+    playing = false;                                          // ★ 【放置対策】プレイ画面に来た直後は「スタート待ち」（Space を押すまで）
     if (name === 'title') renderToday();                      // ★ タイトル画面を出すたびに、本日のトップ3を読み直す（仕様書 8.3）
     if (document.activeElement && document.activeElement.blur) {
       document.activeElement.blur();                          // ★ 押したボタンのフォーカスを外す（Enter でボタンが二重に押されるのを防ぐ）
@@ -120,7 +134,10 @@ const Screens = (() => {                                      // ★ game.js と
 
     $('rh').textContent = r.dead ? 'サーバーダウン…！' : '防衛成功！';       // ★ HPが0で終わったら「サーバーダウン…！」
 
-    const me = Ranking.add(r.k, r.score, r.rate);             // ★ 名前「ななし」で記録する（HP0で終わっても記録する。仕様書 8.2）
+    // ★ 名前「ななし」で記録する（HP0で終わっても記録する。仕様書 8.2）
+    //   ただし学園祭の展示用に、0点のときは記録しない（朝はランキングが空なので、0点でも10位以内に入ってしまうため）。
+    //   記録しないときは me が null になり、ランキングは表示だけで、名前の入力は出ない
+    const me = r.score > 0 ? Ranking.add(r.k, r.score, r.rate) : null;
     renderRanking(r.k, me);                                   // ★ この曲のランキングを出す
     showTip();                                                // ★ 【できれば】豆知識を1つ出す
 
@@ -260,6 +277,12 @@ const Screens = (() => {                                      // ★ game.js と
   // 【キー入力の振り分け】画面ごとにキーの意味を変える（仕様書 4章）
   addEventListener('keydown', e => {
     if (e.repeat) return;                                     // ★ 押しっぱなし（リピート）は無視する
+    if (fading) { e.preventDefault(); return; }               // ★ 【放置対策】ふわっと切りかえている間は、キーを受け付けない（途中で曲が始まったりしないように）
+    if (staff) {                                              // ★ 【スタッフ画面】開いている間は、Esc（とじる）だけ。ほかのキーは効かない
+      e.preventDefault();                                     // ★ Enter で、うしろのボタンが押されたりしないように
+      if (e.code === 'Escape') closeStaff();
+      return;
+    }
     const c = e.code;                                         // ★ キーの名前（Enter、KeyF、Digit1 など）
     const num = /^Digit([1-9])$/.exec(c);                     // ★ 上段の数字キーなら、その数字（テンキー Numpad は入れない）
     const n = SONGS.length;                                   // ★ 曲の数
@@ -276,6 +299,7 @@ const Screens = (() => {                                      // ★ game.js と
 
     } else if (state === 'play') {
       if (c === 'Space') e.preventDefault();                 // ★ Space で画面がスクロールしたり、選ばれたままのボタンが押されたりしないようにする（Space はこの下で Game.key に渡す）
+      if (c === 'Space') playing = true;                      // ★ 【放置対策】Space で曲が始まるので、ここから先は数えない（曲は終わるとリザルト画面に変わる）
       if (c === 'Escape') { Game.stop(); show('select'); }    // ★ 中断（結果は残らない。仕様書 3.1）
       else Game.key(c);                                       // ★ それ以外のキーは game.js に渡す（レーンのキーかどうかは game.js が決める）
 
@@ -296,13 +320,8 @@ const Screens = (() => {                                      // ★ game.js と
   $('rback').onclick = () => { if (!naming) show('title'); }; // ★ リザルト：← タイトルへ（同じ。仕様書 3.5）
   $('rst').onclick = () => {                                  // ★ タイトル：ランキングをリセット（スタッフ用。仕様書 3.2）
     const p = prompt('スタッフ用のパスワードを入れてください');   // ★ 入力ダイアログ。キャンセルなら null が返る
-    if (p === RESET_PASS) {                                   // ★ パスワードが合ったときだけ、先へ進む（間違い・キャンセルは何もしない）
-      if (confirm('ランキングを全部消します。よろしいですか？')) {   // ★ 確認ダイアログで「OK」を押したときだけ
-        Ranking.reset();                                      // ★ 全曲の記録を消す（ranking.js）
-        renderToday();                                        // ★ 本日のトップ3を「--」に戻す
-      }
-    }
     $('rst').blur();                                          // ★ フォーカスを外す（このあと Enter を押したとき、もう一度押されないように）
+    if (p === RESET_PASS) openStaff();                        // ★ パスワードが合ったときだけ、スタッフ画面を開く（間違い・キャンセルは何もしない。学園祭の展示用）
   };
 
   // ★ カードは #cards にまとめて登録する（あとでカードを SONGS から作り直しても、登録しなおさなくてよい）
@@ -314,6 +333,235 @@ const Screens = (() => {                                      // ★ game.js と
     const card = e.target.closest('.card');
     if (card) pick(ORDER.indexOf(+card.dataset.i));           // ★ マウスを乗せたカードを選択中にする（曲の番号 → 左からの位置）
   });
+
+  // 【放置対策】学園祭の展示用。タイトル以外の画面で、キー・クリックが3分なければタイトルに戻る
+  //  ・曲を遊んでいる最中は数えない（放置しても、ハートがなくなって終わり、リザルト画面に変わるため）
+  //  ・残り10秒になったら、画面の右下にカウントダウンを出す
+  //  ・名前の入力中に戻ったときは、その記録は捨てる（「ななし」だらけにならないように）
+  //  ・戻るときは、ふちからゆめかわ色で包んで、3体と「またあそんでね♡」を出してから開く（ほかの画面の切りかえは、今のまま）
+  const cd = document.createElement('div');                   // ★ カウントダウンの札（index.html・style.css は直さず、ここで作る）
+  cd.style.cssText = 'position:absolute;right:14px;bottom:10px;z-index:10;display:none;pointer-events:none;' +
+    'padding:4px 14px;border:2px solid #ffb3da;border-radius:999px;background:rgba(255,255,255,.9);' +
+    'color:#7a3fb0;font-size:15px;font-weight:bold';          // ★ 見た目（右下に小さく。クリックのじゃまをしない）
+  $('stage').appendChild(cd);
+
+  const touch = () => { idleAt = Date.now(); };               // ★ 操作したら、時間を数え直す
+  addEventListener('keydown', touch, true);                   // ★ キー（true＝名前の入力欄より先に受け取る。入力欄はキーを外に渡さないため）
+  addEventListener('pointerdown', touch, true);               // ★ マウスのクリック
+
+  // ★ タイトルに戻す。スタート待ちならゲームを止め、名前の入力中なら記録を捨てる
+  function idleHome() {
+    if (state === 'play') Game.stop();                        // ★ スタート待ちのまま放置されたとき
+    if (naming) {                                             // ★ 名前の入力中に放置されたとき
+      Ranking.remove(last, naming.at);                        // ★ 「ななし」で保存されている今回の記録を消す（ranking.js）
+      naming = null;                                          // ★ 入力中ではなくなった
+      $('nmh').style.display = 'none';                        // ★ 名前の案内を消す
+      lockButtons(false);                                     // ★ ボタンを押せるように戻す
+    }
+    if (document.activeElement && document.activeElement.blur) {
+      document.activeElement.blur();                          // ★ 名前の入力欄などのフォーカスを外す（切りかえの間に打たれないように）
+    }
+    fadeHome();                                               // ★ ふわっと切りかえて、タイトルへ（本日のトップ3も読み直される）
+  }
+
+  // 【ふわっと切りかえ】放置でタイトルに戻るときだけ使う（全部で約2.4秒）
+  //  ① ふちから、ゆめかわ色（ピンク→むらさき→水色）がじわっと閉じてくる
+  //  ② 閉じきるころに、3体（ランサムちゃん・DDoS・フィッシング）がぽんぽんと出て、「またあそんでね♡」がゆっくり浮かびながら出る
+  //  ③ その間に、うしろでタイトル画面に切りかえる
+  //  ④ 3体は小さくなって、文字はうすくなって消えながら、まん中からふわっと開く
+  function fadeHome() {
+    fading = true;
+    const ov = document.createElement('div');                 // ★ ゆめかわ色の幕
+    ov.style.cssText = 'position:absolute;inset:0;z-index:20;background:linear-gradient(180deg,#ffb8e0,#d9c2ff 50%,#a9dcff)';   // ★ クリックも、この幕が受け止める
+    const box = document.createElement('div');                // ★ 3体と文字の入れ物（幕の上に重ねる）
+    box.style.cssText = 'position:absolute;inset:0;z-index:21;pointer-events:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px';
+    const row = document.createElement('div');                // ★ 3体を横にならべる
+    row.style.cssText = 'display:flex;gap:18px';
+    const chs = [0, 2, 1].map(ty => {                         // ★ 左から ランサムちゃん（0）・DDoS（2）・フィッシング（1）
+      const w = document.createElement('div');
+      w.style.cssText = 'width:130px;height:150px;display:grid;place-items:end center;opacity:0';
+      w.innerHTML = charaHTML(ty, false);                     // ★ セレクト画面のカードと同じキャラ
+      row.appendChild(w);
+      return w;
+    });
+    const tx = document.createElement('div');                 // ★ 「またあそんでね♡」
+    tx.textContent = 'またあそんでね♡';
+    tx.style.cssText = 'font-size:40px;font-weight:800;color:#ff4fa3;opacity:0;' +
+      '-webkit-text-stroke:8px #fff;paint-order:stroke fill;text-shadow:0 0 18px rgba(255,255,255,.9)';   // ★ 白いふちどり。リザルト画面の見出しと同じ「なぞり線」（影をずらして重ねると、ふちがぎざぎざになるため）。paint-order で、線を文字のうしろに引く
+    box.append(row, tx);
+    $('stage').append(ov, box);
+
+    const R = 650, SOFT = 120;                                // ★ 幕の穴の大きさ（はじめ）と、ふちのぼかしの幅（px）
+    const CLOSE = 600, SHOW = 1200, OPEN = 600;               // ★ 閉じる・見せる・開く時間（ミリ秒）。文字がゆっくり出るので、見せる時間を長めに
+    const ease = t => t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;   // ★ はじめと終わりをゆっくりにする（0〜1 → 0〜1）
+    const pop = t => {                                        // ★ ぽんっと出る大きさ（0 → 1.15 → 1）
+      t = Math.max(0, Math.min(1, t));
+      return t < .7 ? 1.15 * ease(t / .7) : 1.15 - .15 * ease((t - .7) / .3);
+    };
+    const set = (el, s) => { el.style.transform = 'scale(' + s + ')'; el.style.opacity = s > 0 ? 1 : 0; };   // ★ 大きさを変える（0 なら見せない）
+    // ★ 文字は拡大しない（拡大しながら動かすと、文字のふちがぎざぎざに見えるため）。うすい→はっきり と、下から上へ浮かぶだけ
+    const float = (el, a, y) => { el.style.opacity = a; el.style.transform = 'translateY(' + y + 'px)'; };
+    const t0 = performance.now();                             // ★ 始めた時刻
+    let switched = false;                                     // ★ タイトルに切りかえたか
+
+    const step = () => {
+      const t = performance.now() - t0;                       // ★ 始めてから何ミリ秒たったか
+      let r = 0;                                              // ★ 幕の穴の大きさ（0 なら、画面いっぱいがゆめかわ色）
+      if (t < CLOSE) {                                        // ★ ① 閉じる
+        r = R * (1 - ease(t / CLOSE));
+      } else if (t < CLOSE + SHOW) {                          // ★ ②③ 見せる。途中でタイトルに切りかえる
+        if (!switched && t > CLOSE + 300) { switched = true; show('title'); }
+      } else if (t < CLOSE + SHOW + OPEN) {                   // ★ ④ 開く
+        r = R * ease((t - CLOSE - SHOW) / OPEN);
+      } else {                                                // ★ おしまい
+        if (!switched) show('title');                         // ★ （念のため）切りかえていなければ、ここで切りかえる
+        ov.remove();
+        box.remove();
+        fading = false;
+        return;
+      }
+      const m = 'radial-gradient(circle at 50% 50%, transparent ' + Math.max(0, r - SOFT) + 'px, #000 ' + r + 'px)';   // ★ まん中が穴（すけている）、まわりが幕
+      ov.style.webkitMaskImage = m;
+      ov.style.maskImage = m;
+      if (t < CLOSE + SHOW) {                                 // ★ 3体と文字が、順番にぽんっと出る（閉じきる少し前から）
+        const ts = t - CLOSE + 150;
+        chs.forEach((w, i) => set(w, pop((ts - i * 90) / 300)));
+        const u = ease(Math.max(0, Math.min(1, (ts - 300) / 600)));   // ★ 文字：3体のあとから、0.6秒かけて出る（0〜1）
+        float(tx, u, (1 - u) * 16);                           // ★ 16px 下から、ふわっと浮かぶ
+      } else {                                                // ★ 開くときは、小さくなって消える
+        const a = 1 - ease(Math.min(1, (t - CLOSE - SHOW) / OPEN * 1.6));
+        chs.forEach(w => set(w, a));
+        float(tx, a, 0);                                      // ★ 文字は、うすくなって消える
+      }
+      requestAnimationFrame(step);                            // ★ 次のコマへ
+    };
+    step();
+  }
+
+  // 【スタッフ画面】学園祭の展示用。ランキングを1件ずつ消せる（ふざけた名前が入ったとき用）
+  //  ・上に曲のタブ、下にその曲のランキング10件。行の「×」で、確認してから1件消す（Ranking.remove）
+  //  ・「ぜんぶ消す」で全曲の記録を消す（今までのリセットと同じ）
+  //  ・「とじる」か Esc でタイトルに戻る。3分操作がなければ自動で閉じる
+  const SBTN = 'font:inherit;font-weight:800;border-radius:20px;cursor:pointer;';   // ★ スタッフ画面のボタンの共通の見た目
+  function openStaff() {
+    if (staff) return;                                        // ★ もう開いていれば何もしない
+    idleAt = Date.now();                                      // ★ 開いた時から3分を数える
+    staff = document.createElement('div');                    // ★ 画面全体をおおう幕（うしろのボタンを押せないようにする）
+    staff.style.cssText = 'position:absolute;inset:0;z-index:15;display:grid;place-items:center;background:rgba(70,40,110,.45)';
+    staff.innerHTML =
+      '<div style="width:780px;height:560px;box-sizing:border-box;padding:18px 24px;border-radius:24px;border:3px solid #ffb3da;background:#fff;display:flex;flex-direction:column;gap:10px;color:#4a2a6a">' +
+        '<div style="font-size:22px;font-weight:800;color:#ff4fa3">スタッフ用：ランキングの管理</div>' +
+        '<div data-tabs style="display:flex;gap:6px;justify-content:center"></div>' +
+        '<div data-list style="flex:1;display:flex;flex-direction:column;gap:3px;text-align:left"></div>' +
+        '<div style="display:flex;justify-content:space-between">' +
+          '<button data-all style="' + SBTN + 'padding:8px 18px;color:#d0306f;border:2px solid #ff8fb8;background:#fff">ぜんぶ消す</button>' +
+          '<button data-close style="' + SBTN + 'padding:8px 28px;color:#fff;border:2px solid #fff;background:linear-gradient(135deg,#ff7aa8,#c7a6ff)">とじる [Esc]</button>' +
+        '</div>' +
+      '</div>';
+    staff.addEventListener('click', staffClick);              // ★ 中のボタンのクリックは、ここでまとめて受け取る
+    $('stage').appendChild(staff);
+    renderStaff();
+  }
+
+  // ★ スタッフ画面の中身（タブとランキング）を作り直す
+  function renderStaff() {
+    const tabs = staff.querySelector('[data-tabs]');
+    tabs.innerHTML = '';
+    ORDER.forEach(k => {                                      // ★ 曲のタブ（難易度順）
+      const b = document.createElement('button');
+      b.dataset.song = k;                                     // ★ 曲の番号
+      b.textContent = SONGS[k].name;                          // ★ textContent で入れる（HTMLとして解釈させない）
+      const on = k === staffK;                                // ★ 選んでいる曲なら、色をぬる
+      b.style.cssText = SBTN + 'padding:6px 10px;font-size:14px;border:2px solid ' + SONGS[k].col + ';' +
+        (on ? 'color:#fff;background:' + SONGS[k].col : 'color:' + SONGS[k].col + ';background:#fff');
+      tabs.appendChild(b);
+    });
+    const list = staff.querySelector('[data-list]');
+    list.innerHTML = '';
+    const recs = Ranking.top10(staffK);                       // ★ 選んでいる曲の上位10件
+    if (recs.length === 0) {
+      list.innerHTML = '<div style="margin:auto;color:#a08cbf">きろくは ありません</div>';
+      return;
+    }
+    recs.forEach((e, i) => {                                  // ★ 1件ずつ「順位　名前　点数　防衛率　×」の行を作る
+      const row = document.createElement('div');
+      row.style.cssText = 'display:grid;grid-template-columns:56px 1fr 120px 70px 44px;align-items:center;padding:1px 10px;border-radius:10px;background:' + (i % 2 ? '#fff' : '#fff2fa');
+      const no = document.createElement('b');
+      no.textContent = (i + 1) + '位';
+      const nm = document.createElement('span');
+      nm.textContent = e.n;                                   // ★ 名前は textContent で（ふざけた名前でも、HTMLとして解釈させない）
+      const sc = document.createElement('span');
+      sc.textContent = e.s.toLocaleString() + '点';
+      sc.style.textAlign = 'right';
+      const rt = document.createElement('span');
+      rt.textContent = e.r + '%';
+      rt.style.textAlign = 'right';
+      const x = document.createElement('button');             // ★ 「×」ボタン。押すと、この記録を消す
+      x.dataset.at = e.at;                                    // ★ どの記録かは、登録時刻で見分ける
+      x.textContent = '×';
+      x.setAttribute('aria-label', e.n + ' を消す');
+      x.style.cssText = SBTN + 'justify-self:end;width:28px;height:28px;padding:0;font-size:18px;line-height:1;color:#d0306f;border:2px solid #ff8fb8;background:#fff';
+      row.append(no, nm, sc, rt, x);
+      list.appendChild(row);
+    });
+  }
+
+  // ★ スタッフ画面の中のクリック
+  function staffClick(ev) {
+    const b = ev.target.closest('button');
+    if (!b) return;
+    b.blur();                                                 // ★ フォーカスを外す（このあと Space などで、もう一度押されないように）
+    if (b.dataset.song !== undefined) {                       // ★ 曲のタブ
+      staffK = +b.dataset.song;
+      renderStaff();
+    } else if (b.dataset.at !== undefined) {                  // ★ 「×」
+      const at = +b.dataset.at;
+      const e = Ranking.top10(staffK).find(x => x.at === at);
+      if (e && confirm('「' + e.n + '」（' + SONGS[staffK].name + '・' + e.s.toLocaleString() + '点）を消します。よろしいですか？')) {
+        Ranking.remove(staffK, at);                           // ★ 1件消す（ranking.js）
+      }
+      renderStaff();
+    } else if (b.hasAttribute('data-all')) {                  // ★ 「ぜんぶ消す」
+      if (confirm('ランキングを全部消します。よろしいですか？')) {   // ★ 今までのリセットと同じ確認
+        Ranking.reset();                                      // ★ 全曲の記録を消す（ranking.js）
+      }
+      renderStaff();
+    } else if (b.hasAttribute('data-close')) {                // ★ 「とじる」
+      closeStaff();
+    }
+    idleAt = Date.now();                                      // ★ 確認ダイアログを見ていた時間も、操作として数え直す
+  }
+
+  // ★ スタッフ画面を閉じて、タイトル画面に戻る
+  function closeStaff() {
+    if (!staff) return;
+    staff.remove();
+    staff = null;
+    renderToday();                                            // ★ 本日のトップ3を読み直す（消した記録を反映）
+  }
+
+  // ★ 0.25秒ごとに、残り時間を見る
+  setInterval(() => {
+    if (staff) {                                              // ★ 【スタッフ画面】開いている間は、3分操作がなければ自動で閉じる
+      cd.style.display = 'none';
+      if (Date.now() - idleAt >= STAFF_SEC * 1000) closeStaff();
+      return;
+    }
+    if (state === 'title' || playing || fading) {             // ★ タイトル画面と、遊んでいる最中と、ふわっと切りかえている最中は数えない
+      cd.style.display = 'none';
+      return;
+    }
+    const left = IDLE_SEC - (Date.now() - idleAt) / 1000;     // ★ 残りの秒数
+    if (left <= 0) {
+      cd.style.display = 'none';
+      idleHome();
+    } else if (left <= WARN_SEC) {
+      cd.textContent = 'あと ' + Math.ceil(left) + ' びょうで タイトルへ';   // ★ 例：あと 10 びょうで タイトルへ（長いと、セレクト画面の下の案内と重なる）
+      cd.style.display = '';
+    } else {
+      cd.style.display = 'none';
+    }
+  }, 250);
 
   // 【ゲームの終わり】game.js が結果を渡してくるので、リザルト画面を出す（仕様書 10.2）
   Game.onFinish = showResult;
