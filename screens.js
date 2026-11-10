@@ -5,6 +5,7 @@
      画面ごとのキー入力の振り分け（仕様書 4章）、ボタン、曲カード（SONGS から作る）、本日のトップ、ランキングのリセット、
      リザルト画面（認定証・ランキング・【できれば】名前の入力・【できれば】豆知識）。
    ・学園祭の展示用に、放置するとタイトルに戻るしくみを足した（仕様書にはない。展示用の変更）。
+   ・学園祭の展示用に、スタッフ画面（ランキングを1件ずつ消す・ぜんぶ消す）を足した。リセットボタンのパスワードのあとに開く。
    ・外から呼べるのは Screens.show(name) だけ（仕様書 10.1）。
    ============================================================ */
 
@@ -58,6 +59,10 @@ const Screens = (() => {                                      // ★ game.js と
   let idleAt = Date.now();                                    // ★ 最後に操作した時刻（ミリ秒）
   let playing = false;                                        // ★ 曲を遊んでいる最中なら true（プレイ画面で Space を押したら true。この間は数えない）
   let fading = false;                                         // ★ 放置でタイトルに戻る切りかえ（ふわっと）の最中なら true。この間はキーを受け付けない
+  // ★ 【スタッフ画面】学園祭の展示用。ランキングを1件ずつ消せる画面（パスワードのあとに開く）
+  const STAFF_SEC = 180;                                      // ★ 何秒操作がなければ、スタッフ画面を自動で閉じるか（3分。閉じ忘れたとき、お客さんが記録を消せないように）
+  let staff = null;                                           // ★ 開いているスタッフ画面（div）。開いていなければ null
+  let staffK = ORDER[0];                                      // ★ スタッフ画面で選んでいる曲の番号（はじめは、いちばんやさしい曲）
 
   // 【画面を切り替える】name の画面だけに class="on" を付ける（表示する画面は常に1つ）
   function show(name) {
@@ -273,6 +278,11 @@ const Screens = (() => {                                      // ★ game.js と
   addEventListener('keydown', e => {
     if (e.repeat) return;                                     // ★ 押しっぱなし（リピート）は無視する
     if (fading) { e.preventDefault(); return; }               // ★ 【放置対策】ふわっと切りかえている間は、キーを受け付けない（途中で曲が始まったりしないように）
+    if (staff) {                                              // ★ 【スタッフ画面】開いている間は、Esc（とじる）だけ。ほかのキーは効かない
+      e.preventDefault();                                     // ★ Enter で、うしろのボタンが押されたりしないように
+      if (e.code === 'Escape') closeStaff();
+      return;
+    }
     const c = e.code;                                         // ★ キーの名前（Enter、KeyF、Digit1 など）
     const num = /^Digit([1-9])$/.exec(c);                     // ★ 上段の数字キーなら、その数字（テンキー Numpad は入れない）
     const n = SONGS.length;                                   // ★ 曲の数
@@ -310,13 +320,8 @@ const Screens = (() => {                                      // ★ game.js と
   $('rback').onclick = () => { if (!naming) show('title'); }; // ★ リザルト：← タイトルへ（同じ。仕様書 3.5）
   $('rst').onclick = () => {                                  // ★ タイトル：ランキングをリセット（スタッフ用。仕様書 3.2）
     const p = prompt('スタッフ用のパスワードを入れてください');   // ★ 入力ダイアログ。キャンセルなら null が返る
-    if (p === RESET_PASS) {                                   // ★ パスワードが合ったときだけ、先へ進む（間違い・キャンセルは何もしない）
-      if (confirm('ランキングを全部消します。よろしいですか？')) {   // ★ 確認ダイアログで「OK」を押したときだけ
-        Ranking.reset();                                      // ★ 全曲の記録を消す（ranking.js）
-        renderToday();                                        // ★ 本日のトップ3を「--」に戻す
-      }
-    }
     $('rst').blur();                                          // ★ フォーカスを外す（このあと Enter を押したとき、もう一度押されないように）
+    if (p === RESET_PASS) openStaff();                        // ★ パスワードが合ったときだけ、スタッフ画面を開く（間違い・キャンセルは何もしない。学園祭の展示用）
   };
 
   // ★ カードは #cards にまとめて登録する（あとでカードを SONGS から作り直しても、登録しなおさなくてよい）
@@ -433,8 +438,115 @@ const Screens = (() => {                                      // ★ game.js と
     step();
   }
 
+  // 【スタッフ画面】学園祭の展示用。ランキングを1件ずつ消せる（ふざけた名前が入ったとき用）
+  //  ・上に曲のタブ、下にその曲のランキング10件。行の「×」で、確認してから1件消す（Ranking.remove）
+  //  ・「ぜんぶ消す」で全曲の記録を消す（今までのリセットと同じ）
+  //  ・「とじる」か Esc でタイトルに戻る。3分操作がなければ自動で閉じる
+  const SBTN = 'font:inherit;font-weight:800;border-radius:20px;cursor:pointer;';   // ★ スタッフ画面のボタンの共通の見た目
+  function openStaff() {
+    if (staff) return;                                        // ★ もう開いていれば何もしない
+    idleAt = Date.now();                                      // ★ 開いた時から3分を数える
+    staff = document.createElement('div');                    // ★ 画面全体をおおう幕（うしろのボタンを押せないようにする）
+    staff.style.cssText = 'position:absolute;inset:0;z-index:15;display:grid;place-items:center;background:rgba(70,40,110,.45)';
+    staff.innerHTML =
+      '<div style="width:780px;height:560px;box-sizing:border-box;padding:18px 24px;border-radius:24px;border:3px solid #ffb3da;background:#fff;display:flex;flex-direction:column;gap:10px;color:#4a2a6a">' +
+        '<div style="font-size:22px;font-weight:800;color:#ff4fa3">スタッフ用：ランキングの管理</div>' +
+        '<div data-tabs style="display:flex;gap:6px;justify-content:center"></div>' +
+        '<div data-list style="flex:1;display:flex;flex-direction:column;gap:3px;text-align:left"></div>' +
+        '<div style="display:flex;justify-content:space-between">' +
+          '<button data-all style="' + SBTN + 'padding:8px 18px;color:#d0306f;border:2px solid #ff8fb8;background:#fff">ぜんぶ消す</button>' +
+          '<button data-close style="' + SBTN + 'padding:8px 28px;color:#fff;border:2px solid #fff;background:linear-gradient(135deg,#ff7aa8,#c7a6ff)">とじる [Esc]</button>' +
+        '</div>' +
+      '</div>';
+    staff.addEventListener('click', staffClick);              // ★ 中のボタンのクリックは、ここでまとめて受け取る
+    $('stage').appendChild(staff);
+    renderStaff();
+  }
+
+  // ★ スタッフ画面の中身（タブとランキング）を作り直す
+  function renderStaff() {
+    const tabs = staff.querySelector('[data-tabs]');
+    tabs.innerHTML = '';
+    ORDER.forEach(k => {                                      // ★ 曲のタブ（難易度順）
+      const b = document.createElement('button');
+      b.dataset.song = k;                                     // ★ 曲の番号
+      b.textContent = SONGS[k].name;                          // ★ textContent で入れる（HTMLとして解釈させない）
+      const on = k === staffK;                                // ★ 選んでいる曲なら、色をぬる
+      b.style.cssText = SBTN + 'padding:6px 10px;font-size:14px;border:2px solid ' + SONGS[k].col + ';' +
+        (on ? 'color:#fff;background:' + SONGS[k].col : 'color:' + SONGS[k].col + ';background:#fff');
+      tabs.appendChild(b);
+    });
+    const list = staff.querySelector('[data-list]');
+    list.innerHTML = '';
+    const recs = Ranking.top10(staffK);                       // ★ 選んでいる曲の上位10件
+    if (recs.length === 0) {
+      list.innerHTML = '<div style="margin:auto;color:#a08cbf">きろくは ありません</div>';
+      return;
+    }
+    recs.forEach((e, i) => {                                  // ★ 1件ずつ「順位　名前　点数　防衛率　×」の行を作る
+      const row = document.createElement('div');
+      row.style.cssText = 'display:grid;grid-template-columns:56px 1fr 120px 70px 44px;align-items:center;padding:1px 10px;border-radius:10px;background:' + (i % 2 ? '#fff' : '#fff2fa');
+      const no = document.createElement('b');
+      no.textContent = (i + 1) + '位';
+      const nm = document.createElement('span');
+      nm.textContent = e.n;                                   // ★ 名前は textContent で（ふざけた名前でも、HTMLとして解釈させない）
+      const sc = document.createElement('span');
+      sc.textContent = e.s.toLocaleString() + '点';
+      sc.style.textAlign = 'right';
+      const rt = document.createElement('span');
+      rt.textContent = e.r + '%';
+      rt.style.textAlign = 'right';
+      const x = document.createElement('button');             // ★ 「×」ボタン。押すと、この記録を消す
+      x.dataset.at = e.at;                                    // ★ どの記録かは、登録時刻で見分ける
+      x.textContent = '×';
+      x.setAttribute('aria-label', e.n + ' を消す');
+      x.style.cssText = SBTN + 'justify-self:end;width:28px;height:28px;padding:0;font-size:18px;line-height:1;color:#d0306f;border:2px solid #ff8fb8;background:#fff';
+      row.append(no, nm, sc, rt, x);
+      list.appendChild(row);
+    });
+  }
+
+  // ★ スタッフ画面の中のクリック
+  function staffClick(ev) {
+    const b = ev.target.closest('button');
+    if (!b) return;
+    b.blur();                                                 // ★ フォーカスを外す（このあと Space などで、もう一度押されないように）
+    if (b.dataset.song !== undefined) {                       // ★ 曲のタブ
+      staffK = +b.dataset.song;
+      renderStaff();
+    } else if (b.dataset.at !== undefined) {                  // ★ 「×」
+      const at = +b.dataset.at;
+      const e = Ranking.top10(staffK).find(x => x.at === at);
+      if (e && confirm('「' + e.n + '」（' + SONGS[staffK].name + '・' + e.s.toLocaleString() + '点）を消します。よろしいですか？')) {
+        Ranking.remove(staffK, at);                           // ★ 1件消す（ranking.js）
+      }
+      renderStaff();
+    } else if (b.hasAttribute('data-all')) {                  // ★ 「ぜんぶ消す」
+      if (confirm('ランキングを全部消します。よろしいですか？')) {   // ★ 今までのリセットと同じ確認
+        Ranking.reset();                                      // ★ 全曲の記録を消す（ranking.js）
+      }
+      renderStaff();
+    } else if (b.hasAttribute('data-close')) {                // ★ 「とじる」
+      closeStaff();
+    }
+    idleAt = Date.now();                                      // ★ 確認ダイアログを見ていた時間も、操作として数え直す
+  }
+
+  // ★ スタッフ画面を閉じて、タイトル画面に戻る
+  function closeStaff() {
+    if (!staff) return;
+    staff.remove();
+    staff = null;
+    renderToday();                                            // ★ 本日のトップ3を読み直す（消した記録を反映）
+  }
+
   // ★ 0.25秒ごとに、残り時間を見る
   setInterval(() => {
+    if (staff) {                                              // ★ 【スタッフ画面】開いている間は、3分操作がなければ自動で閉じる
+      cd.style.display = 'none';
+      if (Date.now() - idleAt >= STAFF_SEC * 1000) closeStaff();
+      return;
+    }
     if (state === 'title' || playing || fading) {             // ★ タイトル画面と、遊んでいる最中と、ふわっと切りかえている最中は数えない
       cd.style.display = 'none';
       return;
