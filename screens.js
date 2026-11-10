@@ -57,6 +57,7 @@ const Screens = (() => {                                      // ★ game.js と
   const WARN_SEC = 10;                                        // ★ 残り何秒からカウントダウンを出すか
   let idleAt = Date.now();                                    // ★ 最後に操作した時刻（ミリ秒）
   let playing = false;                                        // ★ 曲を遊んでいる最中なら true（プレイ画面で Space を押したら true。この間は数えない）
+  let fading = false;                                         // ★ 放置でタイトルに戻る切りかえ（ふわっと）の最中なら true。この間はキーを受け付けない
 
   // 【画面を切り替える】name の画面だけに class="on" を付ける（表示する画面は常に1つ）
   function show(name) {
@@ -268,6 +269,7 @@ const Screens = (() => {                                      // ★ game.js と
   // 【キー入力の振り分け】画面ごとにキーの意味を変える（仕様書 4章）
   addEventListener('keydown', e => {
     if (e.repeat) return;                                     // ★ 押しっぱなし（リピート）は無視する
+    if (fading) { e.preventDefault(); return; }               // ★ 【放置対策】ふわっと切りかえている間は、キーを受け付けない（途中で曲が始まったりしないように）
     const c = e.code;                                         // ★ キーの名前（Enter、KeyF、Digit1 など）
     const num = /^Digit([1-9])$/.exec(c);                     // ★ 上段の数字キーなら、その数字（テンキー Numpad は入れない）
     const n = SONGS.length;                                   // ★ 曲の数
@@ -328,6 +330,7 @@ const Screens = (() => {                                      // ★ game.js と
   //  ・曲を遊んでいる最中は数えない（放置しても、ハートがなくなって終わり、リザルト画面に変わるため）
   //  ・残り10秒になったら、画面の右下にカウントダウンを出す
   //  ・名前の入力中に戻ったときは、その記録は捨てる（「ななし」だらけにならないように）
+  //  ・戻るときは、ふちからゆめかわ色で包んで、3体と「またあそんでね♡」を出してから開く（ほかの画面の切りかえは、今のまま）
   const cd = document.createElement('div');                   // ★ カウントダウンの札（index.html・style.css は直さず、ここで作る）
   cd.style.cssText = 'position:absolute;right:14px;bottom:10px;z-index:10;display:none;pointer-events:none;' +
     'padding:4px 14px;border:2px solid #ffb3da;border-radius:999px;background:rgba(255,255,255,.9);' +
@@ -347,12 +350,89 @@ const Screens = (() => {                                      // ★ game.js と
       $('nmh').style.display = 'none';                        // ★ 名前の案内を消す
       lockButtons(false);                                     // ★ ボタンを押せるように戻す
     }
-    show('title');                                            // ★ タイトルへ（本日のトップ3も読み直される）
+    if (document.activeElement && document.activeElement.blur) {
+      document.activeElement.blur();                          // ★ 名前の入力欄などのフォーカスを外す（切りかえの間に打たれないように）
+    }
+    fadeHome();                                               // ★ ふわっと切りかえて、タイトルへ（本日のトップ3も読み直される）
+  }
+
+  // 【ふわっと切りかえ】放置でタイトルに戻るときだけ使う（全部で約2.4秒）
+  //  ① ふちから、ゆめかわ色（ピンク→むらさき→水色）がじわっと閉じてくる
+  //  ② 閉じきるころに、3体（ランサムちゃん・DDoS・フィッシング）がぽんぽんと出て、「またあそんでね♡」がゆっくり浮かびながら出る
+  //  ③ その間に、うしろでタイトル画面に切りかえる
+  //  ④ 3体は小さくなって、文字はうすくなって消えながら、まん中からふわっと開く
+  function fadeHome() {
+    fading = true;
+    const ov = document.createElement('div');                 // ★ ゆめかわ色の幕
+    ov.style.cssText = 'position:absolute;inset:0;z-index:20;background:linear-gradient(180deg,#ffb8e0,#d9c2ff 50%,#a9dcff)';   // ★ クリックも、この幕が受け止める
+    const box = document.createElement('div');                // ★ 3体と文字の入れ物（幕の上に重ねる）
+    box.style.cssText = 'position:absolute;inset:0;z-index:21;pointer-events:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px';
+    const row = document.createElement('div');                // ★ 3体を横にならべる
+    row.style.cssText = 'display:flex;gap:18px';
+    const chs = [0, 2, 1].map(ty => {                         // ★ 左から ランサムちゃん（0）・DDoS（2）・フィッシング（1）
+      const w = document.createElement('div');
+      w.style.cssText = 'width:130px;height:150px;display:grid;place-items:end center;opacity:0';
+      w.innerHTML = charaHTML(ty, false);                     // ★ セレクト画面のカードと同じキャラ
+      row.appendChild(w);
+      return w;
+    });
+    const tx = document.createElement('div');                 // ★ 「またあそんでね♡」
+    tx.textContent = 'またあそんでね♡';
+    tx.style.cssText = 'font-size:40px;font-weight:800;color:#ff4fa3;opacity:0;' +
+      '-webkit-text-stroke:8px #fff;paint-order:stroke fill;text-shadow:0 0 18px rgba(255,255,255,.9)';   // ★ 白いふちどり。リザルト画面の見出しと同じ「なぞり線」（影をずらして重ねると、ふちがぎざぎざになるため）。paint-order で、線を文字のうしろに引く
+    box.append(row, tx);
+    $('stage').append(ov, box);
+
+    const R = 650, SOFT = 120;                                // ★ 幕の穴の大きさ（はじめ）と、ふちのぼかしの幅（px）
+    const CLOSE = 600, SHOW = 1200, OPEN = 600;               // ★ 閉じる・見せる・開く時間（ミリ秒）。文字がゆっくり出るので、見せる時間を長めに
+    const ease = t => t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;   // ★ はじめと終わりをゆっくりにする（0〜1 → 0〜1）
+    const pop = t => {                                        // ★ ぽんっと出る大きさ（0 → 1.15 → 1）
+      t = Math.max(0, Math.min(1, t));
+      return t < .7 ? 1.15 * ease(t / .7) : 1.15 - .15 * ease((t - .7) / .3);
+    };
+    const set = (el, s) => { el.style.transform = 'scale(' + s + ')'; el.style.opacity = s > 0 ? 1 : 0; };   // ★ 大きさを変える（0 なら見せない）
+    // ★ 文字は拡大しない（拡大しながら動かすと、文字のふちがぎざぎざに見えるため）。うすい→はっきり と、下から上へ浮かぶだけ
+    const float = (el, a, y) => { el.style.opacity = a; el.style.transform = 'translateY(' + y + 'px)'; };
+    const t0 = performance.now();                             // ★ 始めた時刻
+    let switched = false;                                     // ★ タイトルに切りかえたか
+
+    const step = () => {
+      const t = performance.now() - t0;                       // ★ 始めてから何ミリ秒たったか
+      let r = 0;                                              // ★ 幕の穴の大きさ（0 なら、画面いっぱいがゆめかわ色）
+      if (t < CLOSE) {                                        // ★ ① 閉じる
+        r = R * (1 - ease(t / CLOSE));
+      } else if (t < CLOSE + SHOW) {                          // ★ ②③ 見せる。途中でタイトルに切りかえる
+        if (!switched && t > CLOSE + 300) { switched = true; show('title'); }
+      } else if (t < CLOSE + SHOW + OPEN) {                   // ★ ④ 開く
+        r = R * ease((t - CLOSE - SHOW) / OPEN);
+      } else {                                                // ★ おしまい
+        if (!switched) show('title');                         // ★ （念のため）切りかえていなければ、ここで切りかえる
+        ov.remove();
+        box.remove();
+        fading = false;
+        return;
+      }
+      const m = 'radial-gradient(circle at 50% 50%, transparent ' + Math.max(0, r - SOFT) + 'px, #000 ' + r + 'px)';   // ★ まん中が穴（すけている）、まわりが幕
+      ov.style.webkitMaskImage = m;
+      ov.style.maskImage = m;
+      if (t < CLOSE + SHOW) {                                 // ★ 3体と文字が、順番にぽんっと出る（閉じきる少し前から）
+        const ts = t - CLOSE + 150;
+        chs.forEach((w, i) => set(w, pop((ts - i * 90) / 300)));
+        const u = ease(Math.max(0, Math.min(1, (ts - 300) / 600)));   // ★ 文字：3体のあとから、0.6秒かけて出る（0〜1）
+        float(tx, u, (1 - u) * 16);                           // ★ 16px 下から、ふわっと浮かぶ
+      } else {                                                // ★ 開くときは、小さくなって消える
+        const a = 1 - ease(Math.min(1, (t - CLOSE - SHOW) / OPEN * 1.6));
+        chs.forEach(w => set(w, a));
+        float(tx, a, 0);                                      // ★ 文字は、うすくなって消える
+      }
+      requestAnimationFrame(step);                            // ★ 次のコマへ
+    };
+    step();
   }
 
   // ★ 0.25秒ごとに、残り時間を見る
   setInterval(() => {
-    if (state === 'title' || playing) {                       // ★ タイトル画面と、遊んでいる最中は数えない
+    if (state === 'title' || playing || fading) {             // ★ タイトル画面と、遊んでいる最中と、ふわっと切りかえている最中は数えない
       cd.style.display = 'none';
       return;
     }
