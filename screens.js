@@ -4,6 +4,7 @@
    ・いまできていること：画面の拡大縮小、背景の演出、画面の切り替え（Screens.show）、
      画面ごとのキー入力の振り分け（仕様書 4章）、ボタン、曲カード（SONGS から作る）、本日のトップ、ランキングのリセット、
      リザルト画面（認定証・ランキング・【できれば】名前の入力・【できれば】豆知識）。
+   ・学園祭の展示用に、放置するとタイトルに戻るしくみを足した（仕様書にはない。展示用の変更）。
    ・外から呼べるのは Screens.show(name) だけ（仕様書 10.1）。
    ============================================================ */
 
@@ -51,11 +52,18 @@ const Screens = (() => {                                      // ★ game.js と
   let sel = 0;                                                // ★ セレクト画面で選択中のカードの位置（左から 0, 1, 2 …。曲の番号は ORDER[sel]）
   let last = 0;                                               // ★ 最後に遊んだ曲の番号（リザルトの「もういちどあそぶ」で使う）
   let naming = null;                                          // ★ 【できれば】名前を入力中の記録。入力中でなければ null
+  // ★ 【放置対策】学園祭の展示用。タイトル以外の画面で、キー・クリックが3分なければタイトルに戻る
+  const IDLE_SEC = 180;                                       // ★ 何秒操作がなければ戻るか（3分＝180秒）。変えるときは、ここだけ直す
+  const WARN_SEC = 10;                                        // ★ 残り何秒からカウントダウンを出すか
+  let idleAt = Date.now();                                    // ★ 最後に操作した時刻（ミリ秒）
+  let playing = false;                                        // ★ 曲を遊んでいる最中なら true（プレイ画面で Space を押したら true。この間は数えない）
 
   // 【画面を切り替える】name の画面だけに class="on" を付ける（表示する画面は常に1つ）
   function show(name) {
     NAMES.forEach(id => $(id).classList.toggle('on', id === name));   // ★ 一致した画面だけ on、ほかは外す
     state = name;                                             // ★ キー入力の振り分けに使う
+    idleAt = Date.now();                                      // ★ 【放置対策】画面が変わったら、時間を数え直す
+    playing = false;                                          // ★ 【放置対策】プレイ画面に来た直後は「スタート待ち」（Space を押すまで）
     if (name === 'title') renderToday();                      // ★ タイトル画面を出すたびに、本日のトップ3を読み直す（仕様書 8.3）
     if (document.activeElement && document.activeElement.blur) {
       document.activeElement.blur();                          // ★ 押したボタンのフォーカスを外す（Enter でボタンが二重に押されるのを防ぐ）
@@ -276,6 +284,7 @@ const Screens = (() => {                                      // ★ game.js と
 
     } else if (state === 'play') {
       if (c === 'Space') e.preventDefault();                 // ★ Space で画面がスクロールしたり、選ばれたままのボタンが押されたりしないようにする（Space はこの下で Game.key に渡す）
+      if (c === 'Space') playing = true;                      // ★ 【放置対策】Space で曲が始まるので、ここから先は数えない（曲は終わるとリザルト画面に変わる）
       if (c === 'Escape') { Game.stop(); show('select'); }    // ★ 中断（結果は残らない。仕様書 3.1）
       else Game.key(c);                                       // ★ それ以外のキーは game.js に渡す（レーンのキーかどうかは game.js が決める）
 
@@ -314,6 +323,50 @@ const Screens = (() => {                                      // ★ game.js と
     const card = e.target.closest('.card');
     if (card) pick(ORDER.indexOf(+card.dataset.i));           // ★ マウスを乗せたカードを選択中にする（曲の番号 → 左からの位置）
   });
+
+  // 【放置対策】学園祭の展示用。タイトル以外の画面で、キー・クリックが3分なければタイトルに戻る
+  //  ・曲を遊んでいる最中は数えない（放置しても、ハートがなくなって終わり、リザルト画面に変わるため）
+  //  ・残り10秒になったら、画面の右下にカウントダウンを出す
+  //  ・名前の入力中に戻ったときは、その記録は捨てる（「ななし」だらけにならないように）
+  const cd = document.createElement('div');                   // ★ カウントダウンの札（index.html・style.css は直さず、ここで作る）
+  cd.style.cssText = 'position:absolute;right:14px;bottom:10px;z-index:10;display:none;pointer-events:none;' +
+    'padding:4px 14px;border:2px solid #ffb3da;border-radius:999px;background:rgba(255,255,255,.9);' +
+    'color:#7a3fb0;font-size:15px;font-weight:bold';          // ★ 見た目（右下に小さく。クリックのじゃまをしない）
+  $('stage').appendChild(cd);
+
+  const touch = () => { idleAt = Date.now(); };               // ★ 操作したら、時間を数え直す
+  addEventListener('keydown', touch, true);                   // ★ キー（true＝名前の入力欄より先に受け取る。入力欄はキーを外に渡さないため）
+  addEventListener('pointerdown', touch, true);               // ★ マウスのクリック
+
+  // ★ タイトルに戻す。スタート待ちならゲームを止め、名前の入力中なら記録を捨てる
+  function idleHome() {
+    if (state === 'play') Game.stop();                        // ★ スタート待ちのまま放置されたとき
+    if (naming) {                                             // ★ 名前の入力中に放置されたとき
+      Ranking.remove(last, naming.at);                        // ★ 「ななし」で保存されている今回の記録を消す（ranking.js）
+      naming = null;                                          // ★ 入力中ではなくなった
+      $('nmh').style.display = 'none';                        // ★ 名前の案内を消す
+      lockButtons(false);                                     // ★ ボタンを押せるように戻す
+    }
+    show('title');                                            // ★ タイトルへ（本日のトップ3も読み直される）
+  }
+
+  // ★ 0.25秒ごとに、残り時間を見る
+  setInterval(() => {
+    if (state === 'title' || playing) {                       // ★ タイトル画面と、遊んでいる最中は数えない
+      cd.style.display = 'none';
+      return;
+    }
+    const left = IDLE_SEC - (Date.now() - idleAt) / 1000;     // ★ 残りの秒数
+    if (left <= 0) {
+      cd.style.display = 'none';
+      idleHome();
+    } else if (left <= WARN_SEC) {
+      cd.textContent = 'あと ' + Math.ceil(left) + ' びょうで タイトルへ';   // ★ 例：あと 10 びょうで タイトルへ（長いと、セレクト画面の下の案内と重なる）
+      cd.style.display = '';
+    } else {
+      cd.style.display = 'none';
+    }
+  }, 250);
 
   // 【ゲームの終わり】game.js が結果を渡してくるので、リザルト画面を出す（仕様書 10.2）
   Game.onFinish = showResult;
