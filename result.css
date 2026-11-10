@@ -6,7 +6,7 @@
    ・使える id / class：
        .cert（認定証の枠）、#rn（曲名）、#rk（ランク）、#rcm（ランクのコメント）、#rt（防衛率）、
        #rs（スコア）、#rm（最大コンボ）、.stamp（認定スタンプ）、.slot（キャラの飾りの枠）、#rday（日付）、
-       #rh（見出し：防衛成功／サーバーダウン）、#rlh（ランキングの見出し行）、#rl（ランキング）、#rl .me（今回の記録の強調）、#again、#home（ボタン）
+       #rh（見出し：防衛成功／サーバーダウン）、#rlh（ランキングの見出し行）、#rl（ランキング）、#rl .me（今回の記録の強調）、#again、#home、#end（ボタン。#end は学園祭の展示用）
        【できれば】#nm（名前の入力欄）、#nmh（名前の案内）、#tip（豆知識の枠）、#tipt（豆知識の文）
    ・キャラの飾りは chara.css のキャラを、.slot（小さく並べる枠）に入れて使う。
    ・色の変数（--pk=ピンク、--bl=水色、--ink=文字色）と、.btn は style.css にある。
@@ -234,14 +234,19 @@
 
 .snap{font-size:14px;font-weight:800;color:#8a5cf0}
 
-/* ---------- ボタン：ぷっくりしたキャンディ風（もういちど／きょくをえらぶ） ---------- */
-#result .row{justify-content:center}
-#again,#home{
+/* ---------- ボタン：ぷっくりしたキャンディ風（もういちど／きょくをえらぶ／おわる） ---------- */
+/* 学園祭の展示用に「おわる」（#end）を足して3つにしたので、少し小さくして横に並べる */
+#result .row{justify-content:center;gap:10px}
+#again,#home,#end{
   transition:transform .12s;
+  font-size:15px;padding:10px 14px;min-width:100px;
 }
+#again small,#home small,#end small{font-size:11px}
+/* おわる：ほかの2つと見分けやすいように、水色→むらさき */
+#end{background:linear-gradient(135deg,#8fd0ff,#c7a6ff);box-shadow:0 4px 0 #8a8fd6}
 /* R-28：押せない間（disabled）は浮き上がり・凹みをしない（仕様書3.5） */
-#again:not(:disabled):hover,#home:not(:disabled):hover{transform:translateY(-3px) scale(1.04)}
-#again:not(:disabled):active,#home:not(:disabled):active{transform:translateY(2px) scale(.97)}
+#again:not(:disabled):hover,#home:not(:disabled):hover,#end:not(:disabled):hover{transform:translateY(-3px) scale(1.04)}
+#again:not(:disabled):active,#home:not(:disabled):active,#end:not(:disabled):active{transform:translateY(2px) scale(.97)}
 
 /* ---------- 動きが苦手な人向け：アニメを止める ---------- */
 @media (prefers-reduced-motion:reduce){

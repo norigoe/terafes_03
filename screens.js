@@ -6,6 +6,8 @@
      リザルト画面（認定証・ランキング・【できれば】名前の入力・【できれば】豆知識）。
    ・学園祭の展示用に、放置するとタイトルに戻るしくみを足した（仕様書にはない。展示用の変更）。
    ・学園祭の展示用に、スタッフ画面（ランキングを1件ずつ消す・ぜんぶ消す）を足した。リセットボタンのパスワードのあとに開く。
+   ・学園祭の展示用に、リザルト画面に「おわる」を足し、キーを もういちど＝Enter、きょくをえらぶ＝Space、おわる＝Esc にした。
+     また、画面の拡大・縮小（Ctrl＋ホイール、Ctrl＋＋－0）と、右クリックのメニューを止めた。
    ・外から呼べるのは Screens.show(name) だけ（仕様書 10.1）。
    ============================================================ */
 
@@ -193,7 +195,7 @@ const Screens = (() => {                                      // ★ game.js と
 
   // 【ボタンを押せなくする／戻す】lock が true なら押せない（仕様書 3.5、4章）
   function lockButtons(lock) {
-    ['again', 'home', 'rback'].forEach(id => { $(id).disabled = lock; });   // ★ disabled＝押せない状態
+    ['again', 'home', 'rback', 'end'].forEach(id => { $(id).disabled = lock; });   // ★ disabled＝押せない状態（end＝おわる。学園祭の展示用）
   }
 
   // 【名前の入力欄のキー】（仕様書 4章）
@@ -308,7 +310,8 @@ const Screens = (() => {                                      // ★ game.js と
 
     } else if (state === 'result') {
       if (c === 'Enter') { e.preventDefault(); start(last); } // ★ もういちどあそぶ（同じ曲）
-      else if (c === 'Escape') show('select');                // ★ きょくをえらぶ
+      else if (c === 'Space') { e.preventDefault(); show('select'); }   // ★ きょくをえらぶ（学園祭の展示用に Esc から Space に変えた）
+      else if (c === 'Escape') fadeHome();                    // ★ おわる（「またあそんでね♡」の切りかえでタイトルへ。学園祭の展示用）
     }
   });
 
@@ -318,6 +321,7 @@ const Screens = (() => {                                      // ★ game.js と
   $('again').onclick = () => { if (!naming) start(last); };   // ★ リザルト：もういちどあそぶ（名前を決めるまでは押せない）
   $('home').onclick = () => { if (!naming) show('select'); }; // ★ リザルト：きょくをえらぶ（同じ）
   $('rback').onclick = () => { if (!naming) show('title'); }; // ★ リザルト：← タイトルへ（同じ。仕様書 3.5）
+  $('end').onclick = () => { if (!naming) fadeHome(); };      // ★ リザルト：おわる（「またあそんでね♡」の切りかえでタイトルへ。学園祭の展示用）
   $('rst').onclick = () => {                                  // ★ タイトル：ランキングをリセット（スタッフ用。仕様書 3.2）
     const p = prompt('スタッフ用のパスワードを入れてください');   // ★ 入力ダイアログ。キャンセルなら null が返る
     $('rst').blur();                                          // ★ フォーカスを外す（このあと Enter を押したとき、もう一度押されないように）
@@ -539,6 +543,19 @@ const Screens = (() => {                                      // ★ game.js と
     staff = null;
     renderToday();                                            // ★ 本日のトップ3を読み直す（消した記録を反映）
   }
+
+  // 【拡大・縮小と右クリックを止める】学園祭の展示用（お客さんが画面をこわしたように見えないように）
+  //  ・Ctrl＋マウスホイール、Ctrl＋「＋」「－」「0」（日本語キーボードの「;」「^」もふくむ）で、画面が拡大・縮小しないようにする
+  //  ・右クリックで、ブラウザのメニュー（戻る・検証など）が出ないようにする
+  //  ・Ctrl+W（閉じる）などは、ブラウザが先に受け取るので止められない（操作の紙で対応）
+  addEventListener('wheel', e => { if (e.ctrlKey) e.preventDefault(); }, { passive: false });   // ★ passive:false にしないと、止められない
+  addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && (['+', '-', '=', '0', ';', '^'].includes(e.key) ||
+        /^(Equal|Minus|Semicolon|Digit0|Numpad0|NumpadAdd|NumpadSubtract)$/.test(e.code))) {
+      e.preventDefault();                                     // ★ ブラウザの拡大・縮小をさせない
+    }
+  }, true);
+  addEventListener('contextmenu', e => e.preventDefault());   // ★ 右クリックのメニューを出さない
 
   // ★ 0.25秒ごとに、残り時間を見る
   setInterval(() => {
