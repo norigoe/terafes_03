@@ -129,7 +129,10 @@ const Screens = (() => {                                      // ★ game.js と
 
     $('rh').textContent = r.dead ? 'サーバーダウン…！' : '防衛成功！';       // ★ HPが0で終わったら「サーバーダウン…！」
 
-    const me = Ranking.add(r.k, r.score, r.rate);             // ★ 名前「ななし」で記録する（HP0で終わっても記録する。仕様書 8.2）
+    // ★ 名前「ななし」で記録する（HP0で終わっても記録する。仕様書 8.2）
+    //   ただし学園祭の展示用に、0点のときは記録しない（朝はランキングが空なので、0点でも10位以内に入ってしまうため）。
+    //   記録しないときは me が null になり、ランキングは表示だけで、名前の入力は出ない
+    const me = r.score > 0 ? Ranking.add(r.k, r.score, r.rate) : null;
     renderRanking(r.k, me);                                   // ★ この曲のランキングを出す
     showTip();                                                // ★ 【できれば】豆知識を1つ出す
 
